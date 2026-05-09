@@ -101,18 +101,8 @@ export default function ImportModal({ onClose, onSuccess }: ImportModalProps) {
         </div>
 
         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
-          {/* Download Template */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">{t('common.step_1_download')}</p>
-            <button onClick={handleDownloadTemplate} className="btn btn-primary flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              {t('common.download_excel_template')}
-            </button>
-          </div>
-
           {/* Upload File */}
           <div>
-            <p className="text-sm font-medium mb-2">{t('common.step_2_upload')}</p>
             <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
               <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <input
@@ -228,37 +218,7 @@ export default function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             </div>
           )}
 
-          {/* Required Columns Info */}
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            <p className="font-bold mb-2 text-slate-800 dark:text-slate-200">{t('common.supported_headers')}:</p>
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-              <div className="grid grid-cols-2 gap-4 mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
-                <span className="font-black text-[9px] uppercase tracking-widest text-slate-400">English / System</span>
-                <span className="font-black text-[9px] uppercase tracking-widest text-slate-400">Amharic Variations</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { en: 'Full Name', am: 'የአባሉ ሙሉ ስም, ስም' },
-                  { en: 'Sex', am: 'ጾታ (ወ/ሴ)' },
-                  { en: 'Sector Type', am: 'ዘርፍ አይነት' },
-                  { en: 'Sector Unit', am: 'ወረዳ/ክላስተር/መስሪያ ቤት' },
-                  { en: 'Member Category', am: 'የአባልነት ዘርፍ' },
-                  { en: 'Gross Salary', am: 'ጠቅላላ የወር ደመወዝ' },
-                  { en: 'Business Type', am: 'የንግድ አይነት (Small, Medium, Large)' },
-                  { en: 'Capital', am: 'ካፒታል' },
-                  { en: 'Contribution In ETB', am: 'የአባሉ ወርሃዊ መዋጮ' }
-                ].map(row => (
-                  <div key={row.en} className="flex flex-col gap-0.5">
-                    <span className="font-bold text-blue-600 dark:text-blue-400">{row.en}</span>
-                    <span className="text-[10px] text-slate-500">{row.am}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="mt-3 opacity-70 italic text-[9px] leading-relaxed">
-              Note: The system now uses an intelligent mapping engine that understands trimmed, lowercased, and partial matches for both languages.
-            </p>
-          </div>
+
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

@@ -16,6 +16,10 @@ i18n
     fallbackLng: 'am', // Set Amharic as default based on user preference
     interpolation: {
       escapeValue: false
+    },
+    parseMissingKeyHandler: (key) => {
+      const parts = key.split('.');
+      return parts[parts.length - 1];
     }
   });
 

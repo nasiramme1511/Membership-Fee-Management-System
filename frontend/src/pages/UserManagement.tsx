@@ -382,14 +382,14 @@ export default function UserManagement() {
       {/* Create/Edit User Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b dark:border-gray-700 flex-shrink-0">
               <h2 className="text-lg font-semibold">{editingUser ? t('common.edit_user') : t('common.create_new_user')}</h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('common.full_name')} *</label>
@@ -432,12 +432,12 @@ export default function UserManagement() {
                       onChange={e => handleSectorTypeChange(e.target.value)}
                     >
                       <option value="">{t('common.select_sector_type')}</option>
-                      {sectorTypes.map(t => (
-                        <option key={t.id} value={t.name}>
-                          {t.name === 'Institution' ? `🏛 ${t('common.government')}`
-                            : t.name === 'Rural Cluster' ? `🌾 ${t('common.rural')}`
-                            : t.name === 'Urban Woreda' ? `🏙 ${t('common.urban')}`
-                            : t.name}
+                      {sectorTypes.map(st => (
+                        <option key={st.id} value={st.name}>
+                          {st.name === 'Institution' ? `🏛 ${t('common.government')}`
+                            : st.name === 'Rural Cluster' ? `🌾 ${t('common.rural')}`
+                            : st.name === 'Urban Woreda' ? `🏙 ${t('common.urban')}`
+                            : st.name}
                         </option>
                       ))}
                     </select>
@@ -457,7 +457,9 @@ export default function UserManagement() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-1">{editingUser ? t('common.new_password') : t('common.password')} *</label>
+                <label className="block text-sm font-medium mb-1">
+                  {editingUser ? t('common.new_password') : t('common.password')} {!editingUser && '*'}
+                </label>
                 <div className="relative">
                   <input
                     className="input pr-10"
@@ -470,15 +472,22 @@ export default function UserManagement() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {!editingUser && form.password && form.password.length < 6 && (
+                  <p className="text-xs text-red-500 mt-1">Password must be at least 6 characters.</p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="isActive" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} className="w-4 h-4" />
                 <label htmlFor="isActive" className="text-sm font-medium">{t('common.account_active')}</label>
               </div>
             </div>
-            <div className="flex justify-end gap-3 p-6 border-t dark:border-gray-700">
+            <div className="flex justify-end gap-3 p-6 border-t dark:border-gray-700 flex-shrink-0">
               <button onClick={() => setShowModal(false)} className="btn btn-secondary">{t('common.cancel')}</button>
-              <button onClick={handleSave} disabled={saving} className="btn btn-primary flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving || (!editingUser && (!form.password || form.password.length < 6))}
+                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {saving ? t('common.loading') : editingUser ? t('common.save_changes') : t('common.create_user')}
               </button>

@@ -133,12 +133,7 @@ export default function Dashboard() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm">
-            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">{t('common.last_update')}</p>
-            <p className="text-[11px] font-bold text-slate-900 dark:text-white">{t('common.just_now')}</p>
-          </div>
-        </div>
+
       </motion.div>
 
       {/* Stats Grid */}
