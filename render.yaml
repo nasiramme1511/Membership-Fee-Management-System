@@ -26,13 +26,11 @@ services:
       - key: FRONTEND_URL
         fromService:
           name: mcms-frontend
-          type: static
+                    type: static_site
           property: url
 
-  # Frontend Static Site
-  - type: static
+  - type: static_site
     name: mcms-frontend
-    env: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
