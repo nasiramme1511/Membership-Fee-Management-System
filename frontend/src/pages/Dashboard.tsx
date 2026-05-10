@@ -106,7 +106,13 @@ export default function Dashboard() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 30, rotateX: 20, scale: 0.95 },
-    show: { opacity: 1, y: 0, rotateX: 0, scale: 1, transition: { type: "spring", bounce: 0.4 } }
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      rotateX: 0, 
+      scale: 1, 
+      transition: { type: "spring", bounce: 0.4 } as any
+    }
   }
 
   return (

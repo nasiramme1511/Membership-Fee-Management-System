@@ -43,6 +43,7 @@ interface Member {
   sectorUnitId?: number
   memberCategoryId?: number
   sectorUnit?: { id: number; name: string; sectorTypeId: number }
+  wing?: { wingType: string }
 }
 
 interface MemberModalProps {
