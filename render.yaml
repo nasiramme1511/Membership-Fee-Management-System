@@ -25,11 +25,11 @@ services:
       - key: FRONTEND_URL
         fromService:
           name: mcms-frontend
-          type: static_site
+          type: web
           property: url
 
   # Frontend Static Site
-  - type: static_site
+  - type: web
     name: mcms-frontend
     env: static
     plan: free
