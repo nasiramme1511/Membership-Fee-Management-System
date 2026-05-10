@@ -69,69 +69,120 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
       setSectors([]);
     }
   }, [selectedSectorType]);
+  
+  useEffect(() => {
+    if (selectedCategoryId && settings) {
+      const newRows = rows.map(r => ({
+        ...r,
+        ...calculateRow(r.grossSalary, settings, employmentType)
+      }));
+      setRows(newRows);
+    }
+  }, [selectedCategoryId, employmentType, settings]);
 
   const calculateRow = (salaryStr: string, currentSettings: any, empType: string): Pick<RowData, 'tax'|'pension'|'netSalary'|'percentage'|'monthlyFee'> => {
     const gross = Number(salaryStr) || 0;
-    if (gross <= 0) return { tax: 0, pension: 0, netSalary: 0, percentage: 0, monthlyFee: 0 };
+    
+    // 1. Get Category Context
+    const selectedCat = categories.find(c => String(c.id) === selectedCategoryId);
+    const catName = selectedCat?.name.toLowerCase() || '';
 
-    // Tax calculation
-    const taxBrackets = currentSettings?.salaryBased?.taxBrackets;
+    let monthlyFee = 0;
     let tax = 0;
-    if (taxBrackets && Array.isArray(taxBrackets) && taxBrackets.length > 0) {
-      const sorted = [...taxBrackets].sort((a, b) => a.threshold - b.threshold);
-      let appliedBracket = sorted[sorted.length - 1];
-      for (const b of sorted) {
-        if (gross <= b.threshold) {
-          appliedBracket = b;
-          break;
-        }
-      }
-      tax = Math.max(0, (gross * (appliedBracket.rate || 0)) - (appliedBracket.deduction || 0));
-    } else {
-      if (gross <= 2000) tax = 0;
-      else if (gross <= 4000) tax = (gross * 0.15) - 300;
-      else if (gross <= 7000) tax = (gross * 0.20) - 500;
-      else if (gross <= 10000) tax = (gross * 0.25) - 850;
-      else if (gross <= 14000) tax = (gross * 0.30) - 1350;
-      else tax = (gross * 0.35) - 2050;
-    }
-
-    // Pension calculation
-    const pensionPerc = currentSettings?.salaryBased?.pensionPercentage ?? 7;
-    const pension = gross * (pensionPerc / 100);
-
-    // Net Salary
-    const netSalary = Math.max(0, gross - tax - pension);
-
-    // Fee Calculation
-    const calcBase = currentSettings?.salaryBased?.calculationBase || 'Net';
-    const salaryToUse = calcBase === 'Net' ? netSalary : gross;
-
-    const brackets = currentSettings?.salaryBased?.[empType.toLowerCase()] || currentSettings?.salaryBased?.private || [];
+    let pension = 0;
+    let netSalary = 0;
     let percentage = 0;
 
-    if (brackets.length > 0) {
-      for (const bracket of brackets) {
-        if (salaryToUse >= bracket.minSalary && salaryToUse <= bracket.maxSalary) {
-          percentage = bracket.percentage;
-          break;
-        }
+    // 2. Specialized Tiers (Can work with 0 or string salary)
+    if (catName.includes('wing')) {
+      // Wing Tiers (Article 7 & 8)
+      if (gross >= 1000) {
+        if (gross <= 3000) monthlyFee = 2;
+        else if (gross <= 5000) monthlyFee = 5;
+        else if (gross <= 10000) monthlyFee = 10;
+        else monthlyFee = 20;
+      } else if (gross > 0) {
+        monthlyFee = 1;
+      } else {
+        monthlyFee = 10; 
       }
-      if (!percentage && salaryToUse > brackets[brackets.length - 1].maxSalary) {
-        percentage = brackets[brackets.length - 1].percentage;
-      }
+    } else if (catName.includes('enterprise') || catName.includes('business')) {
+      // Business Tiers: Micro (5), Small (10), Medium (20)
+      const type = salaryStr.toLowerCase();
+      if (type.includes('micro') || (gross > 0 && gross <= 50000)) monthlyFee = 5;
+      else if (type.includes('small') || (gross > 50000 && gross <= 250000)) monthlyFee = 10;
+      else if (type.includes('medium') || gross > 250000) monthlyFee = 20;
+      else monthlyFee = 5; // Default to Micro if selected but 0 input
+    } else if (catName.includes('investor')) {
+      // Investor Tiers: 500, 1000, 2000
+      if (gross <= 5000000) monthlyFee = 500;
+      else if (gross <= 10000000) monthlyFee = 1000;
+      else monthlyFee = 2000;
+    } else if (catName.includes('student')) {
+      monthlyFee = 1;
+    } else if (catName.includes('resident') || catName.includes('farmer')) {
+      monthlyFee = 5;
     } else {
-      if (salaryToUse <= 4000) percentage = 0.6;
-      else if (salaryToUse <= 5000) percentage = 0.8;
-      else if (salaryToUse <= 6000) percentage = 1.0;
-      else if (salaryToUse <= 7000) percentage = 1.2;
-      else if (salaryToUse <= 8000) percentage = 1.4;
-      else if (salaryToUse <= 9000) percentage = 1.6;
-      else if (salaryToUse <= 10000) percentage = 1.8;
-      else percentage = 2.0;
-    }
+      // Standard Salary-Based
+      if (gross <= 0) return { tax: 0, pension: 0, netSalary: 0, percentage: 0, monthlyFee: 0 };
 
-    const monthlyFee = salaryToUse * (percentage / 100);
+      // Tax calculation
+      const taxBrackets = currentSettings?.salaryBased?.taxBrackets;
+      if (taxBrackets && Array.isArray(taxBrackets) && taxBrackets.length > 0) {
+        const sorted = [...taxBrackets].sort((a, b) => a.threshold - b.threshold);
+        let appliedBracket = sorted[sorted.length - 1];
+        for (const b of sorted) {
+          if (gross <= b.threshold) {
+            appliedBracket = b;
+            break;
+          }
+        }
+        tax = Math.max(0, (gross * (appliedBracket.rate || 0)) - (appliedBracket.deduction || 0));
+      } else {
+        if (gross <= 2000) tax = 0;
+        else if (gross <= 4000) tax = (gross * 0.15) - 300;
+        else if (gross <= 7000) tax = (gross * 0.20) - 500;
+        else if (gross <= 10000) tax = (gross * 0.25) - 850;
+        else if (gross <= 14000) tax = (gross * 0.30) - 1350;
+        else tax = (gross * 0.35) - 2050;
+      }
+
+      // Pension calculation
+      const pensionPerc = currentSettings?.salaryBased?.pensionPercentage ?? 7;
+      pension = gross * (pensionPerc / 100);
+
+      // Net Salary
+      netSalary = Math.max(0, gross - tax - pension);
+
+      // Fee Calculation (Standard Salary-Based)
+      const calcBase = currentSettings?.salaryBased?.calculationBase || 'Net';
+      const salaryToUse = calcBase === 'Net' ? netSalary : gross;
+
+      const brackets = currentSettings?.salaryBased?.[empType.toLowerCase()] || currentSettings?.salaryBased?.private || [];
+
+      if (brackets.length > 0) {
+        for (const bracket of brackets) {
+          if (salaryToUse >= bracket.minSalary && salaryToUse <= bracket.maxSalary) {
+            percentage = bracket.percentage;
+            break;
+          }
+        }
+        if (!percentage && salaryToUse > brackets[brackets.length - 1].maxSalary) {
+          percentage = brackets[brackets.length - 1].percentage;
+        }
+      } else {
+        if (salaryToUse <= 4000) percentage = 0.6;
+        else if (salaryToUse <= 5000) percentage = 0.8;
+        else if (salaryToUse <= 6000) percentage = 1.0;
+        else if (salaryToUse <= 7000) percentage = 1.2;
+        else if (salaryToUse <= 8000) percentage = 1.4;
+        else if (salaryToUse <= 9000) percentage = 1.6;
+        else if (salaryToUse <= 10000) percentage = 1.8;
+        else percentage = 2.0;
+      }
+
+      monthlyFee = salaryToUse * (percentage / 100);
+    }
 
     return { tax, pension, netSalary, percentage, monthlyFee };
   };
@@ -235,15 +286,31 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
     }
   };
 
+  const selectedCat = categories.find(c => String(c.id) === selectedCategoryId);
+  const catName = selectedCat?.name.toLowerCase() || '';
+  let mType = 'Salary-Based';
+  if (catName.includes('wing')) mType = 'Wing';
+  else if (catName.includes('enterprise')) mType = 'Business';
+  else if (catName.includes('student')) mType = 'Student';
+  else if (catName.includes('investor')) mType = 'Investor';
+  else if (catName.includes('resident') || catName.includes('farmer')) mType = 'Non-Salary';
+
   const handleSaveAll = async () => {
     if (!selectedSectorId || !selectedCategoryId) {
       setError(t('common.please_select_sector_and_category'));
       return;
     }
 
-    const validRows = rows.filter(r => r.fullName.trim() !== '' && Number(r.grossSalary) > 0);
+    // For non-salary categories, allow 0 salary. For others, require > 0.
+    const isSalaryRequired = mType === 'Salary-Based' || mType === 'Investor';
+    const validRows = rows.filter(r => {
+      const nameOk = r.fullName.trim() !== '';
+      const salaryOk = isSalaryRequired ? Number(r.grossSalary) > 0 : (mType === 'Business' ? !!r.grossSalary : true);
+      return nameOk && salaryOk;
+    });
+
     if (validRows.length === 0) {
-      setError('No valid rows to save. Please enter at least one member with a name and gross salary.');
+      setError('No valid rows to save. Please enter member names.');
       return;
     }
 
@@ -255,14 +322,18 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
         fullName: r.fullName,
         gender: r.gender,
         financial: {
-          salary: Number(r.grossSalary),
+          salary: mType === 'Salary-Based' || mType === 'Wing' ? Number(r.grossSalary) : 0,
+          capital: mType === 'Investor' ? Number(r.grossSalary) : 0,
+          income: mType === 'Business' && !isNaN(Number(r.grossSalary)) ? Number(r.grossSalary) : 0,
+          businessType: mType === 'Business' ? r.grossSalary : undefined,
           employmentType: employmentType,
           currency: 'ETB',
           occupationType: 'Informal'
         },
         sectorUnitId: Number(selectedSectorId),
         memberCategoryId: Number(selectedCategoryId),
-        membershipType: 'Salary-Based',
+        membershipType: mType,
+        wing: { wingType: selectedCat?.name || '' },
         paymentDay: 1,
         address: { region: 'Dire Dawa', city: 'Dire Dawa', woreda: '01' }
       }));
@@ -369,10 +440,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                 className="input bg-white dark:bg-gray-900 w-full"
               >
                 <option value="">{t('common.search')}...</option>
-                {categories.filter(c => {
-                  const n = c.name.toLowerCase();
-                  return n.includes('employee') || n.includes('ሰራተኛ');
-                }).map(c => (
+                {categories.map(c => (
                   <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>
                 ))}
               </select>
@@ -406,11 +474,20 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                   <th className="px-4 py-3 w-12 text-center text-gray-500">ተ.ቁ.</th>
                   <th className="px-4 py-3">{t('common.full_name')}</th>
                   <th className="px-4 py-3 w-32">{t('common.sex')}</th>
-                  <th className="px-4 py-3 w-40">{t('common.gross_salary_etb')}</th>
-                  <th className="px-4 py-3 w-32">{t('common.income_tax_etb')}</th>
-                  <th className="px-4 py-3 w-32">{t('common.pension_etb')}</th>
-                  <th className="px-4 py-3 w-36">{t('common.net_salary_etb')}</th>
-                  <th className="px-4 py-3 w-24">%</th>
+                  
+                  {/* Dynamic Financial Header */}
+                  {(mType === 'Salary-Based' || mType === 'Wing') && (
+                    <>
+                      <th className="px-4 py-3 w-40">{t('common.gross_salary_etb')}</th>
+                      <th className="px-4 py-3 w-32">{t('common.income_tax_etb')}</th>
+                      <th className="px-4 py-3 w-32">{t('common.pension_etb')}</th>
+                      <th className="px-4 py-3 w-36">{t('common.net_salary_etb')}</th>
+                      <th className="px-4 py-3 w-24">%</th>
+                    </>
+                  )}
+                  {mType === 'Business' && <th className="px-4 py-3 w-40">{t('common.business_type')}</th>}
+                  {mType === 'Investor' && <th className="px-4 py-3 w-40">{t('common.capital')} (ETB)</th>}
+                  
                   <th className="px-4 py-3 w-36">{t('common.monthly_fee')}</th>
                   <th className="px-4 py-3 w-12"></th>
                 </tr>
@@ -444,22 +521,50 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                         <option value="Female">{t('common.female')} (F/ሴ)</option>
                       </select>
                     </td>
-                    <td className="px-4 py-1">
-                      <input
-                        type="number"
-                        name={`grossSalary-${index}`}
-                        value={row.grossSalary}
-                        onChange={(e) => updateRow(index, 'grossSalary', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, index, 'grossSalary')}
-                        placeholder="0.00"
-                        className="w-full bg-transparent border-0 focus:ring-0 p-1 text-sm font-bold text-gray-900 dark:text-white focus:bg-blue-50 dark:focus:bg-blue-900/20 rounded"
-                      />
+
+                    {/* Financial Inputs / Displays */}
+                    {(mType === 'Salary-Based' || mType === 'Wing' || mType === 'Investor') && (
+                      <td className="px-4 py-1">
+                        <input
+                          type="number"
+                          name={`grossSalary-${index}`}
+                          value={row.grossSalary}
+                          onChange={(e) => updateRow(index, 'grossSalary', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'grossSalary')}
+                          placeholder="0.00"
+                          className="w-full bg-transparent border-0 focus:ring-0 p-1 text-sm font-bold text-gray-900 dark:text-white focus:bg-blue-50 dark:focus:bg-blue-900/20 rounded"
+                        />
+                      </td>
+                    )}
+
+                    {mType === 'Business' && (
+                      <td className="px-4 py-1">
+                        <select
+                          name={`grossSalary-${index}`}
+                          value={row.grossSalary || 'Micro'}
+                          onChange={(e) => updateRow(index, 'grossSalary', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'grossSalary')}
+                          className="w-full bg-transparent border-0 focus:ring-0 p-1 text-sm font-bold text-gray-900 dark:text-white focus:bg-blue-50 dark:focus:bg-blue-900/20 rounded"
+                        >
+                          <option value="Micro">{t('common.micro')}</option>
+                          <option value="Small">{t('common.small')}</option>
+                          <option value="Medium">{t('common.medium')}</option>
+                        </select>
+                      </td>
+                    )}
+
+                    {(mType === 'Salary-Based' || mType === 'Wing') && (
+                      <>
+                        <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.tax > 0 ? row.tax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                        <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.pension > 0 ? row.pension.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                        <td className="px-4 py-2 text-primary font-mono font-bold text-sm">{row.netSalary > 0 ? row.netSalary.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                        <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.percentage > 0 ? `${row.percentage}%` : '-'}</td>
+                      </>
+                    )}
+
+                    <td className="px-4 py-2 text-green-600 dark:text-green-400 font-mono font-bold text-sm">
+                      {row.monthlyFee > 0 ? row.monthlyFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : (mType === 'Student' || mType === 'Non-Salary' ? calculateRow('0', settings, employmentType).monthlyFee : '-')}
                     </td>
-                    <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.tax > 0 ? row.tax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                    <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.pension > 0 ? row.pension.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                    <td className="px-4 py-2 text-primary font-mono font-bold text-sm">{row.netSalary > 0 ? row.netSalary.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                    <td className="px-4 py-2 text-gray-500 font-mono text-xs">{row.percentage > 0 ? `${row.percentage}%` : '-'}</td>
-                    <td className="px-4 py-2 text-green-600 dark:text-green-400 font-mono font-bold text-sm">{row.monthlyFee > 0 ? row.monthlyFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                     <td className="px-4 py-2 text-center text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => removeRow(index)} className="hover:text-red-500 transition-colors p-1" title="Remove row">
                         <Trash2 className="w-4 h-4" />

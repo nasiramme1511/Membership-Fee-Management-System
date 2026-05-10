@@ -1,0 +1,52 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: mcms-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          name: mcms-frontend
+          type: static_site
+          property: url
+
+  # Frontend Static Site
+  - type: static_site
+    name: mcms-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: mcms-backend
+          type: web
+          property: url
+        # Append /api to the backend URL
+        # Note: Render doesn't support string concatenation in envVars directly like this
+        # So we might need a small script or just manually set it in the dashboard.
+        # But for Blueprint, we can try to use a build script trick or just set it.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

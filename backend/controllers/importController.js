@@ -364,11 +364,11 @@ function mapExcelRowToMember(rawRow) {
   let membershipType = getVal(['Membership Type', 'MembershipType', 'Type']);
   if (!membershipType && categoryName) {
     const c = String(categoryName).toLowerCase();
-    if (c.includes('employee')) membershipType = 'Salary-Based';
+    if (c.includes('wing')) membershipType = 'Wing';
+    else if (c.includes('employee')) membershipType = 'Salary-Based';
     else if (c.includes('student')) membershipType = 'Student';
     else if (c.includes('investor')) membershipType = 'Investor';
     else if (c.includes('enterprise') || c.includes('business')) membershipType = 'Business';
-    else if (c.includes('wing')) membershipType = 'Wing';
     else if (c.includes('farmer') || c.includes('resident')) membershipType = 'Non-Salary';
   }
 
@@ -388,13 +388,14 @@ function mapExcelRowToMember(rawRow) {
     membershipType,
     categoryName,
     rawCategory: categoryName,
+    wing: { wingType: categoryName },
     financial: {
-      salary,
+      salary:          membershipType === 'Salary-Based' || membershipType === 'Wing' ? salary : 0,
       employmentType:  getVal(['Employment Type', 'EmploymentType', 'የቅጥር ሁኔታ']) || 'Private',
       currency:        'ETB',
       businessType,
-      income:          Number(getVal(['Income', 'ገቢ'])) || 0,
-      capital,
+      income:          membershipType === 'Business' ? (Number(getVal(['Income', 'ገቢ'])) || salary) : 0,
+      capital:         membershipType === 'Investor' ? (Number(getVal(['Capital', 'ካፒታል', 'Capital / ካፒታል'])) || salary) : 0,
       investmentType:  getVal(['Investment Type', 'የኢንቨስትመንት አይነት', 'Investor Type'])
     },
     // Manual overrides for financial results if provided in Excel
