@@ -10,44 +10,67 @@ const bcrypt = require('bcryptjs');
 const data = {
   institution: {
     units: [
-      "Mayor Office", 
-      "Prosperity Party Dire Dawa Branch Office", 
-      "Council", 
+      "Mayor Office",
+      "Prosperity Party Dire Dawa Branch Office",
+      "Council",
       "Mass Media Agency",
-      "Office of the Auditor General", 
-      "Trade, Industry and Investment Bureau", 
-      "Micro and Small Manufacturing Corporation", 
+      "Office of the Auditor General",
+      "Trade Industry and Investment Bureau",
+      "Micro and Medium Manufacturing Corporation",
       "Finance and Economic Development Bureau",
-      "Revenue Authority", 
-      "Civil Service and Human Resource Development Bureau",
-      "Police Commission",
-      "Justice Bureau",
-      "Agriculture Bureau",
-      "Water and Sewerage",
-      "Health Bureau",
+      "Revenue Authority",
+      "Government Communication Affairs Bureau",
+      "Construction and Urban Development Bureau",
+      "Labor and Skills Bureau",
+      "Agriculture Water Mines and Energy Bureau",
+      "Land Development and Management Bureau",
+      "Justice Security and Legal Affairs Bureau",
+      "Public Service and Human Resource Development Bureau",
       "Education Bureau",
-      "Youth and Sport",
-      "Women and Children",
-      "Transport Bureau",
-      "Culture and Tourism",
-      "Environmental Protection"
+      "Women Children and Social Affairs Bureau",
+      "Health Bureau",
+      "City Manager Office",
+      "Water and Sewerage Authority"
     ],
-    categories: ["Employee Members", "Employee Youth Wing Members", "Employee Women Wing Members"]
+    categories: [
+      "Employee Members",
+      "Urban Residents Members",
+      "Enterprises Members",
+      "Students Members",
+      "Investors Members",
+      "Farmer Members",
+      "Employee Youth Wing Members",
+      "Employee Women Wing Members",
+      "Resident Youth Wing Members",
+      "Resident Women Wing Members"
+    ]
   },
   urban: {
     units: ["Woreda 1", "Woreda 2", "Woreda 3", "Woreda 4", "Woreda 5", "Woreda 6", "Woreda 7", "Woreda 8", "Woreda 9"],
     categories: [
-      "Employee", "Urban residents members", "Enterprises", "Students", "Investors",
-      "Employee Youth Wing Members", "Employee Women Wing Members", 
-      "Resident Youth wing members", "Resident Women wing members"
+      "Employee Members",
+      "Urban Residents Members",
+      "Enterprises Members",
+      "Students Members",
+      "Investors Members",
+      "Employee Youth Wing Members",
+      "Employee Women Wing Members",
+      "Resident Youth Wing Members",
+      "Resident Women Wing Members"
     ]
   },
   rural: {
     units: ["Biyyo Awwalle Cluster", "Wahel Cluster", "Aseliso Cluster", "Jeldessa Cluster"],
     categories: [
-      "Employee", "Farmer members", "Enterprises", "Students", "Investors",
-      "Employee Youth Wing Members", "Employee Women Wing Members", 
-      "Resident Youth wing members", "Resident Women wing members"
+      "Employee Members",
+      "Farmer Members",
+      "Enterprises Members",
+      "Students Members",
+      "Investors Members",
+      "Employee Youth Wing Members",
+      "Employee Women Wing Members",
+      "Resident Youth Wing Members",
+      "Resident Women Wing Members"
     ]
   }
 };

@@ -114,7 +114,7 @@ export default function PublicLayout() {
             
             <button 
               onClick={() => navigate('/login')} 
-              className="px-8 py-3 bg-primary dark:bg-primary text-white font-black text-[11px] uppercase tracking-widest rounded-full hover:bg-slate-900 dark:hover:bg-gold dark:hover:text-ebony transition-all duration-500 shadow-[0_10px_20px_rgba(37,99,235,0.2)] dark:shadow-lg"
+              className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-[11px] uppercase tracking-widest rounded-full hover:bg-gold dark:hover:bg-gold hover:text-slate-900 dark:hover:text-slate-900 transition-all duration-500 shadow-[0_10px_20px_rgba(15,23,42,0.2)] dark:shadow-[0_10px_20px_rgba(255,255,255,0.15)]"
             >
               {t('common.login')}
             </button>

@@ -43,6 +43,7 @@ interface Member {
   sectorUnitId?: number
   memberCategoryId?: number
   sectorUnit?: { id: number; name: string; sectorTypeId: number }
+  wing?: { wingType: string }
 }
 
 interface MemberModalProps {
@@ -144,14 +145,19 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
       if (cat) {
         const name = cat.name.toLowerCase()
         let type = 'Non-Salary'
-        if (name.includes('employee member') || name === 'employee') type = 'Salary-Based'
+        if (name.includes('wing')) type = 'Wing'
+        else if (name.includes('employee member') || name === 'employee') type = 'Salary-Based'
         else if (name.includes('enterprise')) type = 'Business'
         else if (name.includes('student')) type = 'Student'
         else if (name.includes('investor')) type = 'Investor'
-        else if (name.includes('wing')) type = 'Wing'
         else if (name.includes('resident') || name.includes('farmer')) type = 'Non-Salary'
         
-        setFormData(prev => ({ ...prev, membershipType: type, memberCategoryId: Number(selectedCategoryId) }))
+        setFormData(prev => ({ 
+          ...prev, 
+          membershipType: type, 
+          memberCategoryId: Number(selectedCategoryId),
+          wing: { ...prev.wing, wingType: cat.name }
+        }))
       }
     }
   }, [selectedCategoryId, categories])
@@ -474,12 +480,65 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
                       required
                     >
                       <option value="">{t('common.search')}...</option>
+                      <option value="Micro">{t('common.micro')}</option>
                       <option value="Small">{t('common.small')}</option>
                       <option value="Medium">{t('common.medium')}</option>
-                      <option value="Large">{t('common.large')}</option>
                     </select>
                   </div>
                 </>
+              )}
+
+              {formData.membershipType === 'Wing' && (() => {
+                const cat = categories.find(c => String(c.id) === selectedCategoryId);
+                const isEmployeeWing = cat?.name.toLowerCase().includes('employee');
+                
+                return (
+                  <>
+                    {isEmployeeWing ? (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">{t('common.salary')}</label>
+                        <input
+                          type="number"
+                          value={formData.financial.salary}
+                          onChange={(e) => setFormData(prev => ({ ...prev, financial: { ...prev.financial, salary: Number(e.target.value) } }))}
+                          className="input"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">{t('common.occupation')}</label>
+                        <select
+                          value={formData.financial.occupationType}
+                          onChange={(e) => setFormData(prev => ({ ...prev, financial: { ...prev.financial, occupationType: e.target.value } }))}
+                          className="input"
+                          required
+                        >
+                          <option value="General">{t('common.general')}</option>
+                          <option value="Farmer">{t('common.farmer')}</option>
+                          <option value="Pastoralist">{t('common.pastoralist')}</option>
+                          <option value="Informal">{t('common.informal')}</option>
+                          <option value="Micro Enterprise">{t('common.micro_enterprise')}</option>
+                          <option value="Small Enterprise">{t('common.small_enterprise')}</option>
+                        </select>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+              {formData.membershipType === 'Investor' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('common.capital')} (ETB) *</label>
+                  <input
+                    type="number"
+                    value={formData.financial.capital}
+                    onChange={(e) => setFormData(prev => ({ ...prev, financial: { ...prev.financial, capital: Number(e.target.value) } }))}
+                    className="input"
+                    placeholder="0"
+                    required
+                  />
+                </div>
               )}
             </div>
           </div>

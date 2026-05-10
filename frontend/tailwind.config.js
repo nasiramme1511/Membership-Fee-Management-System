@@ -9,6 +9,7 @@ export default {
     extend: {
       colors: {
         primary: {
+          DEFAULT: '#0B5D3B',
           50: '#E7F2ED',
           100: '#CFE5DB',
           200: '#9FCBB7',
@@ -21,6 +22,7 @@ export default {
           900: '#031F13',
         },
         gold: {
+          DEFAULT: '#D4AF37',
           50: '#FAF6E7',
           100: '#F5EDCF',
           200: '#EBDB9F',

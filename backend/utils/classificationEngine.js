@@ -62,15 +62,20 @@ class ClassificationEngine {
         const wingOccupation = financial.occupationType || '';
         const wingSalary     = financial.salary || 0;
         const wSettings      = rules?.wing || {};
+        const wTypeName      = String(wing?.wingType || '').toLowerCase();
+        
         subType = wing?.wingType || wingOccupation || 'General';
 
-        if (wingSalary >= 1000) {
-          // Article 7b: Salary-based tiers
+        // Article 7b (Salary) only if the category name contains 'employee'
+        const isEmployeeWing = wTypeName.includes('employee');
+
+        if (isEmployeeWing) {
+          // Article 7b: Salary-based tiers for Employee Wings
           if (wingSalary <= 3000)       monthlyFee = wSettings.salary_1k_3k  ?? 2;
           else if (wingSalary <= 5000)  monthlyFee = wSettings.salary_3k_5k  ?? 5;
           else if (wingSalary <= 10000) monthlyFee = wSettings.salary_5k_10k ?? 10;
           else                          monthlyFee = wSettings.salary_10k_plus ?? 20;
-          classificationRuleId = `WING-SAL-${monthlyFee}BIRR`;
+          classificationRuleId = `WING-EMPLOYEE-SAL-${monthlyFee}BIRR`;
         } else {
           // Article 8: Occupation-based tiers (no salary or salary < 1000)
           const occ = wingOccupation.toLowerCase();
@@ -87,10 +92,9 @@ class ClassificationEngine {
             monthlyFee = wSettings.micro_small ?? 2;
             classificationRuleId = 'WING-MICRO-SMALL';
           } else {
-            // 8d: General → 10 Birr per YEAR (not per month)
-            // Store as annualFee=10 directly, monthlyFee=0
-            monthlyFee = 0;
-            classificationRuleId = 'WING-GENERAL-ANNUAL';
+            // 8d: General → 10 Birr per month
+            monthlyFee = wSettings.general ?? 10;
+            classificationRuleId = 'WING-GENERAL';
           }
         }
         break;
@@ -102,10 +106,7 @@ class ClassificationEngine {
     }
 
     // Calculate annual fee and distribution
-    // Special case: Wing-General pays 10 Birr ANNUALLY (Article 8d)
-    const isWingAnnualOnly = (classificationRuleId === 'WING-GENERAL-ANNUAL');
-    const annualFee = isWingAnnualOnly ? (rules?.wing?.general_annual ?? 10) : Math.round(monthlyFee * 12);
-    if (isWingAnnualOnly) monthlyFee = 0; // Monthly is 0, only annual charge applies
+    const annualFee = Math.round(monthlyFee * 12);
 
     const dist = settings?.distribution || { hqPercentage: 20, branchPercentage: 80 };
     const hqShare = Math.round(annualFee * (dist.hqPercentage / 100));
@@ -237,15 +238,32 @@ class ClassificationEngine {
     let subType = 'Micro';
     let monthlyFee = rules?.business?.micro ?? 5;
 
-    if (businessType.toLowerCase().includes('micro') || income <= 50000) {
+    const type = businessType.toLowerCase();
+    if (type.includes('micro')) {
       subType = 'Micro';
       monthlyFee = rules?.business?.micro ?? 5;
-    } else if (businessType.toLowerCase().includes('small') || income <= 250000) {
+    } else if (type.includes('small')) {
       subType = 'Small';
       monthlyFee = rules?.business?.small ?? 10;
-    } else {
+    } else if (type.includes('medium')) {
       subType = 'Medium';
       monthlyFee = rules?.business?.medium ?? 20;
+    } else if (income > 0) {
+      // Fallback to income-based if no clear type but income is provided
+      if (income <= 50000) {
+        subType = 'Micro';
+        monthlyFee = rules?.business?.micro ?? 5;
+      } else if (income <= 250000) {
+        subType = 'Small';
+        monthlyFee = rules?.business?.small ?? 10;
+      } else {
+        subType = 'Medium';
+        monthlyFee = rules?.business?.medium ?? 20;
+      }
+    } else {
+      // Absolute default
+      subType = 'Micro';
+      monthlyFee = rules?.business?.micro ?? 5;
     }
 
     return {

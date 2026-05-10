@@ -121,7 +121,7 @@ export default function Profile() {
 
   const cardVariants = {
     hidden: { opacity: 0, y: 30, scale: 0.97 },
-    show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', bounce: 0.3 } }
+    show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, bounce: 0.3 } }
   }
 
   if (loading) return <PageLoader />
