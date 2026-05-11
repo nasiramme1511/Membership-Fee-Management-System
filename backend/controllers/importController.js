@@ -51,6 +51,11 @@ function flattenMemberData(data) {
     flat.netSalaryFinalNetSalary   = data.netSalary.finalNetSalary   ?? 0;
     delete flat.netSalary;
   }
+  if (data.wing) {
+    flat.wingType           = (data.wing.wingType && ['Women', 'Youth'].includes(data.wing.wingType)) ? data.wing.wingType : null;
+    flat.wingParentMemberId = data.wing.parentMemberId ?? null;
+    delete flat.wing;
+  }
   delete flat._id;
   delete flat.id;
   return flat;
@@ -409,7 +414,7 @@ function mapExcelRowToMember(rawRow) {
     membershipType,
     categoryName,
     rawCategory: categoryName,
-    wing: { wingType: categoryName },
+    wing: categoryName?.toLowerCase().includes('wing') ? { wingType: (categoryName || '').replace(' Wing', '') } : undefined,
     financial: {
       salary:          membershipType === 'Salary-Based' || membershipType === 'Wing' ? salary : 0,
       employmentType:  getVal(['Employment Type', 'EmploymentType', 'የቅጥር ሁኔታ']) || 'Private',
