@@ -269,6 +269,13 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
     }
   };
 
+  const isRowFilled = (r: RowData): boolean => {
+    if (r.fullName.trim() === '') return false;
+    if (mType === 'Business') return !!r.grossSalary;
+    if (mType === 'Student' || mType === 'Non-Salary') return true;
+    return parseNumeric(r.grossSalary) > 0;
+  };
+
   const removeRow = (index: number) => {
     if (rows.length === 1) setRows([createEmptyRow()]);
     else setRows(rows.filter((_, i) => i !== index));
@@ -352,7 +359,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
             <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">{t('common.total_members')}</p>
               <p className="text-lg font-black text-slate-900 dark:text-white leading-none">
-                {rows.filter(r => r.fullName.trim() !== '' && parseNumeric(r.grossSalary) > 0).length}
+                {rows.filter(isRowFilled).length}
               </p>
             </div>
             <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
@@ -557,7 +564,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
         </div>
         <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4 md:p-6 flex items-center justify-between shrink-0">
           <div className="text-sm text-gray-500">
-            {t('common.valid_rows_ready', { count: rows.filter(r => r.fullName && parseNumeric(r.grossSalary) > 0).length })}
+            {t('common.valid_rows_ready', { count: rows.filter(isRowFilled).length })}
           </div>
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="btn btn-secondary px-6">
