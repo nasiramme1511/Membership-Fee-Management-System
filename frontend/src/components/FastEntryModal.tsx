@@ -282,6 +282,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   else if (catName.includes('student')) mType = 'Student';
   else if (catName.includes('investor')) mType = 'Investor';
   else if (catName.includes('resident') || catName.includes('farmer')) mType = 'Non-Salary';
+  const showEmploymentType = mType === 'Salary-Based' || mType === 'Wing';
 
   const handleSaveAll = async () => {
     if (!selectedSectorId || !selectedCategoryId) {
@@ -309,7 +310,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
           capital: mType === 'Investor' ? parseNumeric(r.grossSalary) : 0,
           income: mType === 'Business' && !isNaN(Number(r.grossSalary)) ? Number(r.grossSalary) : 0,
           businessType: mType === 'Business' ? r.grossSalary : undefined,
-          employmentType: employmentType,
+          ...(showEmploymentType && { employmentType }),
           currency: 'ETB',
           occupationType: 'Informal'
         },
@@ -422,22 +423,24 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">{t('common.employment_type')} *</label>
-              <select
-                value={employmentType}
-                onChange={(e) => {
-                  setEmploymentType(e.target.value);
-                  const newRows = rows.map(r => ({ ...r, ...calculateRow(r.grossSalary, settings, e.target.value) }));
-                  setRows(newRows);
-                }}
-                className="input bg-white dark:bg-gray-900 w-full"
-              >
-                <option value="Government">{t('common.government')}</option>
-                <option value="Private">{t('common.private')}</option>
-                <option value="NGO">{t('common.ngo')}</option>
-              </select>
-            </div>
+            {showEmploymentType && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">{t('common.employment_type')} *</label>
+                <select
+                  value={employmentType}
+                  onChange={(e) => {
+                    setEmploymentType(e.target.value);
+                    const newRows = rows.map(r => ({ ...r, ...calculateRow(r.grossSalary, settings, e.target.value) }));
+                    setRows(newRows);
+                  }}
+                  className="input bg-white dark:bg-gray-900 w-full"
+                >
+                  <option value="Government">{t('common.government')}</option>
+                  <option value="Private">{t('common.private')}</option>
+                  <option value="NGO">{t('common.ngo')}</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950 p-4" ref={tableRef}>
