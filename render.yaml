@@ -26,7 +26,7 @@ services:
       - key: FRONTEND_URL
         fromService:
           name: mcms-frontend
-                    type: static_site
+          type: static_site
           property: url
 
   - type: static_site
