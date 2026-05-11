@@ -1,8 +1,14 @@
 import axios from 'axios'
 
 const getBaseURL = () => {
-  const url = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  return url.endsWith('/api') ? url : `${url}/api`;
+  // In production, frontend is served from the same Express server.
+  // So all API calls are relative (no cross-origin issues).
+  // In development, proxy is configured in vite.config.ts to forward /api to localhost:5000.
+  if (import.meta.env.VITE_API_URL) {
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
+  return '/api'; // Relative URL works for both dev (via Vite proxy) and production
 };
 
 const api = axios.create({

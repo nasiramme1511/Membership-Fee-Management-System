@@ -1,0 +1,14 @@
+{
+  "name": "mcms-ddu",
+  "version": "1.0.0",
+  "description": "MCMS DDU - Full Stack App",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+    "start": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

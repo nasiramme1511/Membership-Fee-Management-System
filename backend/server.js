@@ -7,28 +7,11 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:3000'
-].filter(Boolean);
-
+// CORS — allow all in production (frontend served from same Express server)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const normalizedAllowedOrigins = allowedOrigins.map(url => url.replace(/\/$/, ''));
-    const normalizedOrigin = origin.replace(/\/$/, '');
-    
-    if (normalizedAllowedOrigins.indexOf(normalizedOrigin) !== -1 || process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      console.warn(`CORS blocked for origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.NODE_ENV === 'production'
+    ? true  // Same-origin: frontend served by this Express server
+    : ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -90,6 +73,21 @@ app.use('/api',               require('./routes/sectorRoutes'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Prosperity Party Membership Backend Running', timestamp: new Date() });
 });
+
+// ── Serve Frontend (Production) ───────────────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+  if (fs.existsSync(frontendDist)) {
+    app.use(express.static(frontendDist));
+    // SPA fallback — all non-API routes serve index.html
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+    console.log('✅ Serving frontend from:', frontendDist);
+  } else {
+    console.warn('⚠️  Frontend dist folder not found. Run: npm run build');
+  }
+}
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

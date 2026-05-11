@@ -1,12 +1,10 @@
 version: 1
 services:
-  # Backend Web Service
   - type: web
-    name: mcms-backend
+    name: mcms-app
     env: node
     plan: free
-    rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -27,25 +25,3 @@ services:
         value: "true"
       - key: JWT_SECRET
         generateValue: true
-      - key: FRONTEND_URL
-        fromService:
-          name: mcms-frontend
-          type: static
-          property: url
-
-  # Frontend Static Site
-  - type: static
-    name: mcms-frontend
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          name: mcms-backend
-          type: web
-          property: url
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
