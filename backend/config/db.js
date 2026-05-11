@@ -104,7 +104,8 @@ const connectDB = async () => {
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
     console.error('Check: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSL');
-    process.exit(1);
+    console.error('⚠️  Server continuing without database. Health checks and static assets will work, but API calls requiring DB will fail.');
+    // DO NOT exit - let the server stay up for health checks and graceful recovery
   }
 };
 

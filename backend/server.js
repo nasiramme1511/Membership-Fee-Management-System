@@ -112,7 +112,7 @@ if (isProduction) {
     console.log('✅ Serving React frontend from:', frontendDist);
   } else {
     console.error('❌ Frontend dist not found at:', frontendDist);
-    console.error('   Ensure buildCommand ran: bash build.sh');
+    console.error('   Ensure npm run build completed successfully');
     // Fallback response for root in case dist is missing
     app.get('*', (req, res) => {
       res.status(503).send('Frontend build not found. Please check deployment logs.');
