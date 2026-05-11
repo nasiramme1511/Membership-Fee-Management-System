@@ -8,7 +8,13 @@ const sequelize = dbUrl
       dialect: 'mysql',
       logging: false,
       pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
-      define: { charset: 'utf8mb4', collate: 'utf8mb4_unicode_ci' }
+      define: { charset: 'utf8mb4', collate: 'utf8mb4_unicode_ci' },
+      dialectOptions: process.env.DB_SSL === 'true' ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false // Set to true if you provide the CA cert
+        }
+      } : {}
     })
   : new Sequelize(
       process.env.DB_NAME || 'mcms',
@@ -20,7 +26,13 @@ const sequelize = dbUrl
         dialect: 'mysql',
         logging: false,
         pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
-        define: { charset: 'utf8mb4', collate: 'utf8mb4_unicode_ci' }
+        define: { charset: 'utf8mb4', collate: 'utf8mb4_unicode_ci' },
+        dialectOptions: process.env.DB_SSL === 'true' ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
+        } : {}
       }
     );
 
