@@ -38,7 +38,7 @@ const sharedOptions = {
 
 // Build Sequelize instance from individual env vars (used on Render)
 const sequelize = new Sequelize(
-  process.env.DB_NAME     || 'mcms',
+  process.env.DB_NAME     || 'defaultdb',
   process.env.DB_USER     || 'root',
   process.env.DB_PASSWORD || '',
   {
