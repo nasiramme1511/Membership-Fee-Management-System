@@ -393,7 +393,7 @@ class ClassificationEngine {
     }
 
     const salary = memberData.financial?.salary || 0;
-    const netSalaryData = this.calculateNetSalary(salary);
+    const netSalaryData = this.calculateNetSalary(salary, settings);
     
     // Manual overrides for deductions if provided
     if (memberData.manualFinancial) {

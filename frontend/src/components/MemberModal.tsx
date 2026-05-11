@@ -156,7 +156,7 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
           ...prev, 
           membershipType: type, 
           memberCategoryId: Number(selectedCategoryId),
-          wing: { ...prev.wing, wingType: cat.name }
+          wing: type === 'Wing' ? { wingType: cat.name.replace(' Wing', '') } : undefined
         }))
       }
     }

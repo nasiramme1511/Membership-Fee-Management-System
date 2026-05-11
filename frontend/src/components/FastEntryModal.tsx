@@ -316,7 +316,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
         sectorUnitId: Number(selectedSectorId),
         memberCategoryId: Number(selectedCategoryId),
         membershipType: mType,
-        wing: { wingType: selectedCat?.name || '' },
+        wing: mType === 'Wing' ? { wingType: (selectedCat?.name || '').replace(' Wing', '') } : undefined,
         paymentDay: 1,
         address: { region: 'Dire Dawa', city: 'Dire Dawa', woreda: '01' }
       }));
@@ -417,11 +417,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                 className="input bg-white dark:bg-gray-900 w-full"
               >
                 <option value="">{t('common.search')}...</option>
-                {categories.filter(c => {
-                  const n = c.name.toLowerCase();
-                  return n === 'employee members' || n === 'employee youth wing members' || n === 'employee women wing members' || 
-                         n.includes('የመንግስት ሰራተኛ') || n.includes('የሰራተኛ ወጣት') || n.includes('የሰራተኛ ሴቶች');
-                }).map(c => (
+                {categories.map(c => (
                   <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>
                 ))}
               </select>
