@@ -1,5 +1,7 @@
 // seed.js - Sample Data Seeder (MySQL / Sequelize Migration)
 const dotenv = require('dotenv');
+dotenv.config(); // Load .env BEFORE requiring db.js (which reads env vars)
+
 const { connectDB, sequelize } = require('./config/db');
 const Member = require('./models/Member');
 const User = require('./models/User');
@@ -8,8 +10,6 @@ const Receipt = require('./models/Receipt');
 const Setting = require('./models/Setting');
 const Contribution = require('./models/Contribution');
 const ClassificationEngine = require('./utils/classificationEngine');
-
-dotenv.config();
 
 // ─── Helper: flatten nested member data → flat DB columns ────────────────────
 function flattenMemberData(data) {
