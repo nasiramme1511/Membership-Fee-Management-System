@@ -1,35 +1,46 @@
-// server.js - Main entry point for MCMS-DDU Backend (MySQL / Sequelize)
-const express = require('express');
-const cors    = require('cors');
-const dotenv  = require('dotenv');
+// server.js - MCMS DDU Backend (Production-Ready Monolith)
+'use strict';
 
+const express  = require('express');
+const cors     = require('cors');
+const dotenv   = require('dotenv');
+const fs       = require('fs');
+const path     = require('path');
+
+// Load env vars first
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production';
 const app = express();
 
-// CORS — allow all in production (frontend served from same Express server)
+// ── CORS ─────────────────────────────────────────────────────────────────────
+// In production: frontend is served by THIS Express server (same origin).
+// Browser requests are same-origin, so CORS is not needed.
+// We still enable it for health checks or Postman testing.
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? true  // Same-origin: frontend served by this Express server
-    : ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
+  origin: isProduction
+    ? true   // Accept all (same-origin anyway)
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// ── Body Parsers ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files - serve uploaded profile pics
-const fs = require('fs');
-const path = require('path');
+// ── Uploaded Files (profile photos, etc.) ────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
 
-// ── MySQL Connection & Model Sync ─────────────────────────────────────────────
-const { connectDB, sequelize } = require('./config/db');
+// ── Database Connection & Model Sync ─────────────────────────────────────────
+const { connectDB } = require('./config/db');
 
-// Define Sequelize associations BEFORE connectDB syncs tables
+// Load models & define associations BEFORE connectDB runs sync
 const User         = require('./models/User');
 const Member       = require('./models/Member');
 const Payment      = require('./models/Payment');
@@ -41,21 +52,22 @@ Payment.belongsTo(Member, { foreignKey: 'memberDbId', as: 'memberInfo', onDelete
 Member.hasMany(Payment,   { foreignKey: 'memberDbId', as: 'payments',   onDelete: 'CASCADE' });
 
 // Receipt ↔ Member
-Receipt.belongsTo(Member,  { foreignKey: 'memberDbId',  as: 'memberInfo', onDelete: 'CASCADE'  });
-Member.hasMany(Receipt,    { foreignKey: 'memberDbId',  as: 'receipts',    onDelete: 'CASCADE'  });
+Receipt.belongsTo(Member, { foreignKey: 'memberDbId',  as: 'memberInfo', onDelete: 'CASCADE' });
+Member.hasMany(Receipt,   { foreignKey: 'memberDbId',  as: 'receipts',   onDelete: 'CASCADE' });
 
 // Receipt ↔ Payment
 Receipt.belongsTo(Payment, { foreignKey: 'paymentDbId', as: 'paymentInfo', onDelete: 'CASCADE' });
-Payment.hasMany(Receipt,   { foreignKey: 'paymentDbId', as: 'receipts',    onDelete: 'CASCADE'    });
+Payment.hasMany(Receipt,   { foreignKey: 'paymentDbId', as: 'receipts',    onDelete: 'CASCADE' });
 
 // Contribution ↔ Member
-Contribution.belongsTo(Member, { foreignKey: 'memberDbId', as: 'memberInfo', onDelete: 'CASCADE' });
+Contribution.belongsTo(Member, { foreignKey: 'memberDbId', as: 'memberInfo',    onDelete: 'CASCADE' });
 Member.hasMany(Contribution,   { foreignKey: 'memberDbId', as: 'contributions', onDelete: 'CASCADE' });
 
-// Connect and sync tables
+// Connect to DB (async - server starts regardless, DB connects in background)
 connectDB();
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── API Routes ────────────────────────────────────────────────────────────────
+// IMPORTANT: All API routes MUST be defined BEFORE the SPA fallback below
 app.use('/api/auth',          require('./routes/authRoutes'));
 app.use('/api/users',         require('./routes/userRoutes'));
 app.use('/api/members',       require('./routes/memberRoutes'));
@@ -69,41 +81,68 @@ app.use('/api/settings',      require('./routes/settingRoutes'));
 app.use('/api/backup',        require('./routes/backupRoutes'));
 app.use('/api',               require('./routes/sectorRoutes'));
 
-// Health Check
+// Health Check (must be before SPA fallback)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Prosperity Party Membership Backend Running', timestamp: new Date() });
-});
-
-// ── Serve Frontend (Production) ───────────────────────────────────────────────
-if (process.env.NODE_ENV === 'production') {
-  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-  if (fs.existsSync(frontendDist)) {
-    app.use(express.static(frontendDist));
-    // SPA fallback — all non-API routes serve index.html
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(frontendDist, 'index.html'));
-    });
-    console.log('✅ Serving frontend from:', frontendDist);
-  } else {
-    console.warn('⚠️  Frontend dist folder not found. Run: npm run build');
-  }
-}
-
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  res.json({
+    status: 'OK',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
   });
 });
 
+// ── Serve React Frontend (Production Only) ────────────────────────────────────
+// The dist folder is built during Render's buildCommand step.
+// Path: /opt/render/project/src/frontend/dist (relative to repo root)
+if (isProduction) {
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+
+  if (fs.existsSync(frontendDist)) {
+    // Serve static assets (JS, CSS, images)
+    app.use(express.static(frontendDist, {
+      maxAge: '1d',         // Cache static assets for 1 day
+      etag: true
+    }));
+
+    // SPA Fallback: Any route NOT starting with /api → serve index.html
+    // This supports React Router client-side routing
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+
+    console.log('✅ Serving React frontend from:', frontendDist);
+  } else {
+    console.error('❌ Frontend dist not found at:', frontendDist);
+    console.error('   Ensure buildCommand ran: bash build.sh');
+    // Fallback response for root in case dist is missing
+    app.get('*', (req, res) => {
+      res.status(503).send('Frontend build not found. Please check deployment logs.');
+    });
+  }
+}
+
+// ── Global Error Handler ──────────────────────────────────────────────────────
+// Must be LAST middleware
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  console.error(`[ERROR] ${req.method} ${req.path} →`, err.message);
+  if (!isProduction) console.error(err.stack);
+
+  res.status(status).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    ...((!isProduction) && { stack: err.stack })
+  });
+});
+
+// ── Start Server ──────────────────────────────────────────────────────────────
+// Render injects PORT automatically - MUST use process.env.PORT
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Prosperity Party Membership Backend Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🗄️  Database: MySQL (Sequelize)`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('==========================================');
+  console.log(`🚀 MCMS Server running on port ${PORT}`);
+  console.log(`📊 Environment : ${process.env.NODE_ENV}`);
+  console.log(`🗄️  Database   : ${process.env.DB_HOST}:${process.env.DB_PORT}`);
+  console.log('==========================================');
 });
 
 module.exports = app;
