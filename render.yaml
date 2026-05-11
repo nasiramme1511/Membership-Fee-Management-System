@@ -12,7 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DB_HOST
-        sync: false
+        sync: false # Must be provided in Render UI
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
@@ -20,7 +20,11 @@ services:
       - key: DB_NAME
         sync: false
       - key: DB_PORT
-        value: 3306
+        value: 3306 # Default for most, but Aiven uses 23074 (User will override in UI)
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SYNC
+        value: "true" # Set to true for first deployment to create tables
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
@@ -29,6 +33,7 @@ services:
           type: static_site
           property: url
 
+  # Frontend Static Site
   - type: static_site
     name: mcms-frontend
     plan: free
