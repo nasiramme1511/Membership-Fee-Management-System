@@ -34,6 +34,13 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Production scripts with hardcoded credentials — never commit
+backend/check_prod.js
+backend/check_prod_state.js
+backend/seed_prod.js
+backend/seed_prod_fix.js
+backend/seed_prod_fix2.js
+
 # Misc
 *.pem
 *.key
