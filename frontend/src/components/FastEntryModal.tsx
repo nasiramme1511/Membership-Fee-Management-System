@@ -37,6 +37,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [employmentType, setEmploymentType] = useState('Government');
   const [sectors, setSectors] = useState<any[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<any[]>([]);
 
   const [rows, setRows] = useState<RowData[]>([createEmptyRow(), createEmptyRow(), createEmptyRow()]);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -70,6 +71,14 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
     }
   }, [selectedSectorType]);
   
+  useEffect(() => {
+    if (selectedSectorId) {
+      api.get(`/sectors/${selectedSectorId}/categories`).then(res => setAvailableCategories(res.data)).catch(() => {});
+    } else {
+      setAvailableCategories([]);
+    }
+  }, [selectedSectorId]);
+
   useEffect(() => {
     if (selectedCategoryId && settings) {
       const newRows = rows.map(r => ({
@@ -395,6 +404,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                   onChange={(e) => {
                     setSelectedSectorType(e.target.value);
                     setSelectedSectorId('');
+                    setSelectedCategoryId('');
                   }}
                   className="input bg-white dark:bg-gray-900 w-full"
                 >
@@ -409,12 +419,12 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
               <label className="block text-xs font-bold text-gray-500 mb-1">{t('common.sector_unit')} *</label>
               <select
                 value={selectedSectorId}
-                onChange={(e) => setSelectedSectorId(e.target.value)}
+                onChange={(e) => { setSelectedSectorId(e.target.value); setSelectedCategoryId(''); }}
                 className="input bg-white dark:bg-gray-900 w-full"
                 disabled={userRole !== 'sector_officer' && !selectedSectorType}
               >
                 <option value="">{t('common.search')}...</option>
-                {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
+                  {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
               </select>
             </div>
             <div>
@@ -423,9 +433,10 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
                 value={selectedCategoryId}
                 onChange={(e) => setSelectedCategoryId(e.target.value)}
                 className="input bg-white dark:bg-gray-900 w-full"
+                disabled={!selectedSectorId}
               >
                 <option value="">{t('common.search')}...</option>
-                {categories.map(c => (
+                {availableCategories.map(c => (
                   <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>
                 ))}
               </select>
