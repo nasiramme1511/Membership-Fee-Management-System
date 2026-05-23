@@ -355,7 +355,7 @@ exports.importMembers = async (req, res) => {
 
     // ── Batch insert (chunked to avoid max_allowed_packet overflow) ──────
     if (membersToCreate.length > 0) {
-      const CHUNK_SIZE = 100;
+      const CHUNK_SIZE = 500;
       let inserted = 0;
       try {
         for (let start = 0; start < membersToCreate.length; start += CHUNK_SIZE) {
