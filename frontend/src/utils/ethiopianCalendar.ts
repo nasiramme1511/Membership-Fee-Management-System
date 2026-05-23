@@ -45,7 +45,7 @@ function jdnToEthiopian(jdn: number): { year: number; month: number; day: number
   const remaining = diff - Math.floor((1461 * year) / 4);
   const month = Math.floor(remaining / 30) + 1;
   const day = remaining - 30 * (month - 1) + 1;
-  return { year: year + 1, month, day };
+  return { year, month, day };
 }
 
 /**
