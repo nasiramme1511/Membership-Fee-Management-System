@@ -265,18 +265,27 @@ exports.defaulterReport = async (req, res) => {
 // ─── Export all data ───────────────────────────────────────────────────────────
 exports.exportAllData = async (req, res) => {
   try {
+    const { sequelize } = require('../config/db');
+    const Op = require('sequelize').Op;
     const { sectorId, sectorType, memberCategoryId } = req.query;
     const where = {};
     if (memberCategoryId) where.memberCategoryId = memberCategoryId;
     if (sectorType) {
-      const { sequelize } = require('../config/db');
       const units = await sequelize.query(
         `SELECT id FROM sector_units WHERE sectorTypeId = (SELECT id FROM sector_types WHERE name = ?)`,
         { replacements: [sectorType], type: sequelize.QueryTypes.SELECT }
       );
-      where.sectorUnitId = { [require('sequelize').Op.in]: units.map(u => u.id) };
+      where.sectorUnitId = { [Op.in]: units.map(u => u.id) };
     }
     if (sectorId) where.sectorUnitId = sectorId;
+
+    // Only include members who have at least one payment record
+    const paidMemberIds = await Payment.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('memberDbId')), 'memberDbId']],
+      raw: true
+    });
+    const paidIds = paidMemberIds.map(p => p.memberDbId);
+    where.id = { [Op.in]: paidIds };
 
     const rawMembers = await Member.findAll({
       where,
@@ -308,6 +317,7 @@ exports.exportAllData = async (req, res) => {
         model: Member,
         as: 'memberInfo',
         attributes: ['fullName', 'memberId'],
+        where: { id: { [Op.in]: paidIds } },
         include: [{ model: require('../models/SectorUnit'), as: 'sectorUnit', attributes: ['name'] }]
       }]
     });
@@ -327,13 +337,17 @@ exports.exportAllData = async (req, res) => {
       };
     });
 
-    const receipts = await Receipt.findAll();
+    // Filter receipts to only those belonging to paid members
+    const receipts = await Receipt.findAll({
+      where: { memberDbId: { [Op.in]: paidIds } }
+    });
 
     res.json({
       success: true,
       data: { members, payments, receipts, exportedAt: new Date() }
     });
   } catch (error) {
+    console.error('exportAllData error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

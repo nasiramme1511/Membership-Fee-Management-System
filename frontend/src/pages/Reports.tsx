@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../lib/api'
 import { useTranslation } from 'react-i18next'
-import { Download, FileSpreadsheet, FileText, Filter, Wallet, Banknote, Calculator, Building2, AlertTriangle, Users } from 'lucide-react'
+import { Download, FileText, Filter, Wallet, Banknote, Building2, AlertTriangle, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import { useAuth } from '../context/AuthContext'
@@ -87,7 +87,12 @@ export default function Reports() {
 
   const handleExport = async () => {
     try {
-      const res = await api.get('/reports/export')
+      const filterParams: Record<string, any> = {}
+      if (selectedSectorType) filterParams.sectorType = selectedSectorType
+      if (selectedSectorId) filterParams.sectorId = selectedSectorId
+      if (selectedCategoryId) filterParams.memberCategoryId = selectedCategoryId
+
+      const res = await api.get('/reports/export', { params: filterParams })
       const data = res.data.data
       
       const XLSX = await import('xlsx')
@@ -226,22 +231,6 @@ export default function Reports() {
           {/* Monthly Revenue Report */}
           {reportType === 'monthly' && monthlyData && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { label: t('common.total_revenue'), value: `ETB ${monthlyData.summary.totalRevenue?.toLocaleString() || 0}`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                  { label: t('common.total_payments'), value: monthlyData.summary.totalPayments || 0, icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                  { label: t('common.avg_payment'), value: `ETB ${Math.round(monthlyData.summary.avgPayment || 0).toLocaleString()}`, icon: Calculator, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
-                ].map((s, idx) => (
-                  <div key={idx} className="card flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-                    <div>
-                      <p className="text-2xl font-bold">{s.value}</p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card">
                   <h3 className="text-lg font-semibold mb-4">{t('common.revenue_by_type')}</h3>
