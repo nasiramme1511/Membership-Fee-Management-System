@@ -155,6 +155,8 @@
     "total_outstanding": "ጠቅላላ ያልተሰበሰበ",
     "no_defaulters_found": "ምንም ያልከፈለ አባል አልተገኘም",
     "all_sector_types": "ሁሉም የዘርፍ አይነቶች",
+    "all_units": "ሁሉም ክፍሎች",
+    "all_categories": "ሁሉም ምድቦች",
     "contribution_rules": "የመዋጮ ደንቦች",
     "sector_unit_management": "የዘርፍ ክፍሎች አስተዳደር",
     "system_settings": "የስርዓት ቅንብሮች",

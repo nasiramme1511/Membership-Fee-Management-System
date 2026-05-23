@@ -155,6 +155,8 @@
     "total_outstanding": "Total Outstanding",
     "no_defaulters_found": "No defaulters found",
     "all_sector_types": "All Sector Types",
+    "all_units": "All Units",
+    "all_categories": "All Categories",
     "contribution_rules": "Contribution Rules",
     "sector_unit_management": "Sector Unit Management",
     "system_settings": "System Settings",

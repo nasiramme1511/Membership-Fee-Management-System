@@ -4,17 +4,38 @@ const Payment = require('../models/Payment');
 const Receipt = require('../models/Receipt');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 
-// ─── Shared helper: build scope strings from sectorId ─────────────────────────
-function buildScope(sequelize, sectorId) {
-  if (!sectorId) return { memberWhere: '', mWhere: '', payWhere: '', pWhere: '' };
-  const esc = sequelize.escape(sectorId);
+// ─── Shared helper: build scope strings from filters ─────────────────────────
+function buildScope(sequelize, filters = {}) {
+  const { sectorId, sectorType, memberCategoryId } = filters;
+  const mConds = [];
+  const directConds = [];
+  let extraJoin = '';
+
+  if (sectorId) {
+    const esc = sequelize.escape(sectorId);
+    mConds.push(`m.sectorUnitId = ${esc}`);
+    directConds.push(`sectorUnitId = ${esc}`);
+  }
+  if (memberCategoryId) {
+    const esc = sequelize.escape(memberCategoryId);
+    mConds.push(`m.memberCategoryId = ${esc}`);
+    directConds.push(`memberCategoryId = ${esc}`);
+  }
+  if (sectorType) {
+    const esc = sequelize.escape(sectorType);
+    extraJoin = ' JOIN sector_units su ON m.sectorUnitId = su.id';
+    mConds.push(`su.sectorTypeId = (SELECT id FROM sector_types WHERE name = ${esc})`);
+    directConds.push(`sectorUnitId IN (SELECT id FROM sector_units WHERE sectorTypeId = (SELECT id FROM sector_types WHERE name = ${esc}))`);
+  }
+
+  const mStr = mConds.length > 0 ? ' AND ' + mConds.join(' AND ') : '';
+  const dStr = directConds.length > 0 ? ' AND ' + directConds.join(' AND ') : '';
+
   return {
-    memberWhere: ` AND sectorUnitId = ${esc} `,
-    mWhere:      ` AND m.sectorUnitId = ${esc} `,
-    // For unaliased payments table
-    payWhere:    ` AND memberDbId IN (SELECT id FROM members WHERE sectorUnitId = ${esc}) `,
-    // For payments aliased as 'p'
-    pWhere:      ` AND p.memberDbId IN (SELECT id FROM members WHERE sectorUnitId = ${esc}) `
+    memberWhere: dStr,
+    mWhere:      mStr,
+    pWhere:      extraJoin + mStr,
+    payWhere:    dStr ? ` AND memberDbId IN (SELECT id FROM members WHERE 1=1 ${dStr})` : ''
   };
 }
 
@@ -25,7 +46,11 @@ exports.monthlyRevenue = async (req, res) => {
     const Q = sequelize.QueryTypes.SELECT;
     const currentMonth = Number(req.query.month) || getEthiopianMonth();
     const currentYear  = Number(req.query.year)  || getEthiopianYear();
-    const { pWhere, mWhere } = buildScope(sequelize, req.query.sectorId);
+    const { pWhere } = buildScope(sequelize, {
+      sectorId: req.query.sectorId,
+      sectorType: req.query.sectorType,
+      memberCategoryId: req.query.memberCategoryId
+    });
 
     const [summary] = await sequelize.query(
       `SELECT COALESCE(SUM(p.amount),0) AS totalRevenue,
@@ -96,7 +121,11 @@ exports.yearlyRevenue = async (req, res) => {
     const { sequelize } = require('../config/db');
     const Q = sequelize.QueryTypes.SELECT;
     const currentYear = Number(req.query.year) || getEthiopianYear();
-    const { pWhere } = buildScope(sequelize, req.query.sectorId);
+    const { pWhere } = buildScope(sequelize, {
+      sectorId: req.query.sectorId,
+      sectorType: req.query.sectorType,
+      memberCategoryId: req.query.memberCategoryId
+    });
 
     const yearlyData = await sequelize.query(
       `SELECT p.periodMonth AS _id,
@@ -129,7 +158,11 @@ exports.hqBranchDistribution = async (req, res) => {
     const { sequelize } = require('../config/db');
     const Q = sequelize.QueryTypes.SELECT;
     const currentYear = Number(req.query.year) || getEthiopianYear();
-    const { memberWhere } = buildScope(sequelize, req.query.sectorId);
+    const { memberWhere } = buildScope(sequelize, {
+      sectorId: req.query.sectorId,
+      sectorType: req.query.sectorType,
+      memberCategoryId: req.query.memberCategoryId
+    });
 
     const [row] = await sequelize.query(
       `SELECT COALESCE(SUM(contributionHqShare),0)     AS totalHQ,
@@ -164,7 +197,11 @@ exports.defaulterReport = async (req, res) => {
     const Q = sequelize.QueryTypes.SELECT;
     const currentMonth = getEthiopianMonth();
     const currentYear  = getEthiopianYear();
-    const { mWhere } = buildScope(sequelize, req.query.sectorId);
+    const { mWhere } = buildScope(sequelize, {
+      sectorId: req.query.sectorId,
+      sectorType: req.query.sectorType,
+      memberCategoryId: req.query.memberCategoryId
+    });
 
     const defaulters = await sequelize.query(`
       SELECT m.*, su.name AS sectorUnitName
@@ -195,8 +232,18 @@ exports.defaulterReport = async (req, res) => {
 // ─── Export all data ───────────────────────────────────────────────────────────
 exports.exportAllData = async (req, res) => {
   try {
-    const sectorId = req.query.sectorId;
-    const where = sectorId ? { sectorUnitId: sectorId } : {};
+    const { sectorId, sectorType, memberCategoryId } = req.query;
+    const where = {};
+    if (memberCategoryId) where.memberCategoryId = memberCategoryId;
+    if (sectorType) {
+      const { sequelize } = require('../config/db');
+      const units = await sequelize.query(
+        `SELECT id FROM sector_units WHERE sectorTypeId = (SELECT id FROM sector_types WHERE name = ?)`,
+        { replacements: [sectorType], type: sequelize.QueryTypes.SELECT }
+      );
+      where.sectorUnitId = { [require('sequelize').Op.in]: units.map(u => u.id) };
+    }
+    if (sectorId) where.sectorUnitId = sectorId;
 
     const rawMembers = await Member.findAll({
       where,

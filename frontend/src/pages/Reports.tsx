@@ -22,36 +22,59 @@ export default function Reports() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [sectorTypes, setSectorTypes] = useState<any[]>([])
   const [selectedSectorType, setSelectedSectorType] = useState('')
+  const [sectors, setSectors] = useState<any[]>([])
+  const [selectedSectorId, setSelectedSectorId] = useState('')
+  const [categories, setCategories] = useState<any[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
 
   useEffect(() => {
     api.get('/sector-types').then(res => setSectorTypes(res.data))
   }, [])
 
   useEffect(() => {
+    if (selectedSectorType) {
+      api.get(`/sectors?type=${selectedSectorType}`).then(res => setSectors(res.data))
+    } else {
+      setSectors([])
+    }
+  }, [selectedSectorType])
+
+  useEffect(() => {
+    if (selectedSectorId) {
+      api.get(`/sectors/${selectedSectorId}/categories`).then(res => setCategories(res.data)).catch(() => {})
+    } else {
+      setCategories([])
+    }
+  }, [selectedSectorId])
+
+  useEffect(() => {
     fetchReports()
-  }, [reportType, selectedMonth, selectedYear, selectedSectorType])
+  }, [reportType, selectedMonth, selectedYear, selectedSectorType, selectedSectorId, selectedCategoryId])
 
   const fetchReports = async () => {
     setLoading(true)
     try {
-      const sectorParam = selectedSectorType ? { sectorType: selectedSectorType } : {}
+      const filterParams = {}
+      if (selectedSectorType) filterParams.sectorType = selectedSectorType
+      if (selectedSectorId) filterParams.sectorId = selectedSectorId
+      if (selectedCategoryId) filterParams.memberCategoryId = selectedCategoryId
       if (reportType === 'monthly') {
         const res = await api.get('/reports/monthly-revenue', {
-          params: { month: selectedMonth, year: selectedYear, ...sectorParam }
+          params: { month: selectedMonth, year: selectedYear, ...filterParams }
         })
         setMonthlyData(res.data.data)
       } else if (reportType === 'yearly') {
         const res = await api.get('/reports/yearly-revenue', {
-          params: { year: selectedYear, ...sectorParam }
+          params: { year: selectedYear, ...filterParams }
         })
         setYearlyData(res.data.data)
       } else if (reportType === 'hq-branch') {
         const res = await api.get('/reports/hq-branch', {
-          params: { year: selectedYear, ...sectorParam }
+          params: { year: selectedYear, ...filterParams }
         })
         setHqBranch(res.data.data)
       } else if (reportType === 'defaulters') {
-        const res = await api.get('/reports/defaulters', { params: sectorParam })
+        const res = await api.get('/reports/defaulters', { params: filterParams })
         setDefaulters(res.data.data)
       }
     } catch (err) {
@@ -127,7 +150,7 @@ export default function Reports() {
           {user?.role !== 'sector_officer' && (
             <select
               value={selectedSectorType}
-              onChange={(e) => setSelectedSectorType(e.target.value)}
+              onChange={(e) => { setSelectedSectorType(e.target.value); setSelectedSectorId(''); setSelectedCategoryId(''); }}
               className="input"
             >
               <option value="">{t('common.all_sector_types')}</option>
@@ -143,6 +166,30 @@ export default function Reports() {
               ))}
             </select>
           )}
+
+          <select
+            value={selectedSectorId}
+            onChange={(e) => { setSelectedSectorId(e.target.value); setSelectedCategoryId(''); }}
+            className="input"
+            disabled={!selectedSectorType && user?.role !== 'sector_officer'}
+          >
+            <option value="">{t('common.all_units')}</option>
+            {sectors.map(s => (
+              <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            className="input"
+            disabled={!selectedSectorId}
+          >
+            <option value="">{t('common.all_categories')}</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>
+            ))}
+          </select>
 
           <select
             value={selectedMonth}
