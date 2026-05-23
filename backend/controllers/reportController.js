@@ -39,6 +39,24 @@ function buildScope(sequelize, filters = {}) {
   };
 }
 
+// ─── Build member filter conditions (for queries starting FROM members) ─────
+function buildMemberConditions(sequelize, filters = {}) {
+  const { sectorId, sectorType, memberCategoryId } = filters;
+  const conds = [];
+
+  if (sectorId) {
+    conds.push(`m.sectorUnitId = ${sequelize.escape(sectorId)}`);
+  }
+  if (memberCategoryId) {
+    conds.push(`m.memberCategoryId = ${sequelize.escape(memberCategoryId)}`);
+  }
+  if (sectorType) {
+    conds.push(`m.sectorUnitId IN (SELECT id FROM sector_units WHERE sectorTypeId = (SELECT id FROM sector_types WHERE name = ${sequelize.escape(sectorType)}))`);
+  }
+
+  return conds.length > 0 ? ' AND ' + conds.join(' AND ') : '';
+}
+
 // ─── Monthly Revenue Report ────────────────────────────────────────────────────
 exports.monthlyRevenue = async (req, res) => {
   try {
@@ -46,11 +64,13 @@ exports.monthlyRevenue = async (req, res) => {
     const Q = sequelize.QueryTypes.SELECT;
     const currentMonth = Number(req.query.month) || getEthiopianMonth();
     const currentYear  = Number(req.query.year)  || getEthiopianYear();
-    const { pWhere } = buildScope(sequelize, {
+    const filters = {
       sectorId: req.query.sectorId,
       sectorType: req.query.sectorType,
       memberCategoryId: req.query.memberCategoryId
-    });
+    };
+    const { pWhere } = buildScope(sequelize, filters);
+    const memberConds = buildMemberConditions(sequelize, filters);
 
     const [summary] = await sequelize.query(
       `SELECT COALESCE(SUM(p.amount),0) AS totalRevenue,
@@ -73,15 +93,17 @@ exports.monthlyRevenue = async (req, res) => {
       { replacements: [currentMonth, currentYear], type: Q }
     );
 
+    // Show ALL sector units with members matching the filter, with 0 for unpaid
     const byBranch = await sequelize.query(
       `SELECT COALESCE(su.name, m.sector, m.branch) AS _id,
-              SUM(p.amount) AS totalRevenue,
-              COUNT(*)      AS count
-       FROM payments p
-       JOIN members m ON p.memberDbId = m.id
+              COALESCE(SUM(p.amount), 0) AS totalRevenue,
+              COUNT(p.id) AS count
+       FROM members m
        LEFT JOIN sector_units su ON m.sectorUnitId = su.id
-       WHERE p.periodMonth = ? AND p.periodYear = ? ${pWhere}
-       GROUP BY COALESCE(su.name, m.sector, m.branch)`,
+       LEFT JOIN payments p ON p.memberDbId = m.id AND p.periodMonth = ? AND p.periodYear = ?
+       WHERE m.status = 'Active' ${memberConds}
+       GROUP BY COALESCE(su.name, m.sector, m.branch)
+       ORDER BY totalRevenue DESC`,
       { replacements: [currentMonth, currentYear], type: Q }
     );
 
@@ -139,12 +161,23 @@ exports.yearlyRevenue = async (req, res) => {
       { replacements: [currentYear], type: Q }
     );
 
-    const totalRevenue  = yearlyData.reduce((s, d) => s + Number(d.monthlyRevenue), 0);
-    const totalPayments = yearlyData.reduce((s, d) => s + Number(d.payments),       0);
+    // Fill in all 13 Ethiopian months, defaulting to 0 for unpaid months
+    const fullYearlyData = [];
+    for (let m = 1; m <= 13; m++) {
+      const existing = yearlyData.find(d => Number(d._id) === m);
+      fullYearlyData.push({
+        _id: m,
+        monthlyRevenue: existing ? Number(existing.monthlyRevenue) : 0,
+        payments: existing ? Number(existing.payments) : 0
+      });
+    }
+
+    const totalRevenue  = fullYearlyData.reduce((s, d) => s + d.monthlyRevenue, 0);
+    const totalPayments = fullYearlyData.reduce((s, d) => s + d.payments, 0);
 
     res.json({
       success: true,
-      data: { year: currentYear, totalRevenue, totalPayments, monthlyBreakdown: yearlyData }
+      data: { year: currentYear, totalRevenue, totalPayments, monthlyBreakdown: fullYearlyData }
     });
   } catch (error) {
     console.error('yearlyRevenue error:', error.message);
