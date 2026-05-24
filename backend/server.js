@@ -50,7 +50,7 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 
 // ── Database Connection & Model Sync ─────────────────────────────────────────
-const { connectDB } = require('./config/db');
+const { sequelize, connectDB } = require('./config/db');
 
 // Load models & define associations BEFORE connectDB runs sync
 const User         = require('./models/User');
@@ -134,6 +134,21 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString()
   });
+});
+
+// Database health check — helps diagnose DB connection issues in production
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ connected: true, host: process.env.DB_HOST, database: process.env.DB_NAME });
+  } catch (err) {
+    res.status(503).json({
+      connected: false,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      error: err.message
+    });
+  }
 });
 
 // ── Serve React Frontend (Production Only) ────────────────────────────────────
