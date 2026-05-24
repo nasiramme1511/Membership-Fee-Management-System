@@ -13,7 +13,7 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 15000,
+  timeout: 30000,
 });
 
 // Add token to requests
@@ -30,8 +30,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Skip redirect for login/auth endpoints — the calling code handles errors there
+      const authEndpoints = ['/auth/login', '/auth/register']
+      const isAuthEndpoint = authEndpoints.some(e => error.config?.url?.includes(e))
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

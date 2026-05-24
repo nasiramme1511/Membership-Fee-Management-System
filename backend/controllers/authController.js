@@ -40,7 +40,8 @@ exports.register = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Register error:', error);
+    res.status(500).json({ success: false, message: 'Registration failed due to a server error.' });
   }
 };
 
@@ -62,13 +63,13 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({ success: false, message: 'Account is deactivated.' });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ success: false, message: 'Account is deactivated.' });
     }
 
     const token = generateToken(user.id);
@@ -86,7 +87,8 @@ exports.login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Login failed due to a server error. Please try again.' });
   }
 };
 
@@ -103,7 +105,8 @@ exports.getMe = async (req, res) => {
 
     res.json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('getMe error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user data.' });
   }
 };
 
@@ -113,6 +116,7 @@ exports.getAllUsers = async (req, res) => {
     const users = await User.findAll({ attributes: { exclude: ['password'] } });
     res.json({ success: true, data: users });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('getAllUsers error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch users.' });
   }
 };

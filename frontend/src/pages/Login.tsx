@@ -71,7 +71,20 @@ export default function Login() {
       navigate('/dashboard')
     } catch (err: any) {
       console.error('Login error:', err)
-      setError(err.response?.data?.message || t('common.error'))
+      if (err.response?.data) {
+        const apiMsg = err.response.data.message
+        if (apiMsg && typeof apiMsg === 'string' && apiMsg.trim()) {
+          setError(apiMsg)
+        } else if (err.response.status >= 500) {
+          setError(t('common.server_error'))
+        } else {
+          setError(t('common.error'))
+        }
+      } else if (err.code === 'ECONNABORTED') {
+        setError(t('common.timeout_error'))
+      } else {
+        setError(t('common.network_error'))
+      }
     } finally {
       setLoading(false)
     }

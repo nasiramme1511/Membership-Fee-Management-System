@@ -20,10 +20,9 @@ async function debugLogin() {
         role: 'admin'
       });
     } else {
-      console.log('Admin found. Re-hashing password manually...');
-      const hashedPassword = await bcrypt.hash(plainPassword, 10);
-      // Use direct update to bypass hooks if they are causing double hashing
-      await User.update({ password: hashedPassword }, { where: { id: admin.id } });
+      console.log('Admin found. Resetting password via instance save (hooks handle hashing)...');
+      admin.password = plainPassword;
+      await admin.save();
     }
 
     // Verify
