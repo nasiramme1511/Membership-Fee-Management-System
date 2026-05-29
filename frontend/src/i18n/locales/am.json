@@ -152,6 +152,7 @@
     "revenue_by_type": "በአይነት የተከፋፈለ ገቢ",
     "revenue_by_category": "በዘርፍ የተከፋፈለ ገቢ",
     "monthly_breakdown": "የወራት ዝርዝር",
+    "quarterly_breakdown": "የሩብ ዓመት ዝርዝር",
     "distribution_chart": "የክፍፍል ሰንጠረዥ",
     "hq_share": "የዋና መ/ቤት ድርሻ",
     "branch_share": "የዘርፍ ድርሻ",
@@ -524,6 +525,20 @@
     "Biyyo Awwalle Cluster": "ቢዮ አዋሌ ክላስተር",
     "Wahel Cluster": "ዋሄል ክላስተር",
     "Aseliso Cluster": "አሰሊሶ ክላስተር",
-    "Jeldessa Cluster": "ጀልዴሳ ክላስተር"
+    "Jeldessa Cluster": "ጀልዴሳ ክላስተር",
+
+    "sector_report": "የዘርፍ ሪፖርት",
+    "total_paid": "ጠቅላላ የተከፈለ",
+    "total_unpaid": "ጠቅላላ ያልተከፈለ",
+    "collection_rate": "የመሰብሰቢያ መጠን",
+    "sector_name": "የዘርፍ ስም",
+    "paid_members": "የተከፈለ አባላት",
+    "unpaid_members": "ያልተከፈለ አባላት",
+    "payment_percentage": "የክፍያ መቶኛ",
+    "all_statuses": "ሁሉም ሁኔታዎች",
+    "print": "አትም",
+    "no_report_data": "ምንም የሪፖርት መረጃ የለም",
+    "search_sector": "ዘርፍ ይፈልጉ...",
+    "no_data": "ምንም መረጃ የለም"
   }
 }

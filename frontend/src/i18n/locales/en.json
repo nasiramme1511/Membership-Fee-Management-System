@@ -152,6 +152,7 @@
     "revenue_by_type": "Revenue by Member Type",
     "revenue_by_category": "Revenue by Member Category",
     "monthly_breakdown": "Monthly Breakdown",
+    "quarterly_breakdown": "Quarterly Breakdown",
     "distribution_chart": "Distribution Chart",
     "hq_share": "HQ Share",
     "branch_share": "Sector Unit Share",
@@ -524,6 +525,20 @@
     "Biyyo Awwalle Cluster": "Biyyo Awwalle Cluster",
     "Wahel Cluster": "Wahel Cluster",
     "Aseliso Cluster": "Aseliso Cluster",
-    "Jeldessa Cluster": "Jeldessa Cluster"
+    "Jeldessa Cluster": "Jeldessa Cluster",
+
+    "sector_report": "Sector Report",
+    "total_paid": "Total Paid Members",
+    "total_unpaid": "Total Unpaid Members",
+    "collection_rate": "Collection Rate",
+    "sector_name": "Sector Name",
+    "paid_members": "Paid Members",
+    "unpaid_members": "Unpaid Members",
+    "payment_percentage": "Payment %",
+    "all_statuses": "All Statuses",
+    "print": "Print",
+    "no_report_data": "No report data available",
+    "search_sector": "Search sectors...",
+    "no_data": "No data"
   }
 }

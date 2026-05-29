@@ -86,9 +86,10 @@ const seedInitialUsers = async () => {
     const User = require('./models/User');
     const bcrypt = require('bcryptjs');
 
-    const [admin, operator] = await Promise.all([
+    const [admin, operator, adminPP] = await Promise.all([
       User.findOne({ where: { email: 'admin@mcms.ddu' } }),
-      User.findOne({ where: { email: 'operator@mcms.ddu' } })
+      User.findOne({ where: { email: 'operator@mcms.ddu' } }),
+      User.findOne({ where: { email: 'admin@pp-diredawa.org' } })
     ]);
 
     if (!admin) {
@@ -101,9 +102,16 @@ const seedInitialUsers = async () => {
     if (!operator) {
       await User.create({
         username: 'operator', email: 'operator@mcms.ddu',
-        password: 'operator123', fullName: 'System Operator', role: 'operator'
+        password: 'operator123', fullName: 'System Operator', role: 'sector_officer'
       });
       console.log('✅ Auto-created operator: operator@mcms.ddu / operator123');
+    }
+    if (!adminPP) {
+      await User.create({
+        username: 'admin-pp', email: 'admin@pp-diredawa.org',
+        password: 'admin123', fullName: 'PP Dire Dawa Administrator', role: 'admin'
+      });
+      console.log('✅ Auto-created admin: admin@pp-diredawa.org / admin123');
     }
   } catch (err) {
     console.error('⚠️ Auto-seed skipped (DB not ready):', err.message);

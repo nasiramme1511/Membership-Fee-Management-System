@@ -11,7 +11,7 @@ async function askAI(question) {
     const completion = await openai.chat.completions.create({
       model: "qwen/qwen-2.5-coder-32b:free", // Use the free Qwen model on OpenRouter
       messages: [
-        { role: "system", content: "You are a coding assistant helping Nasir with the MCMS-DDU project." },
+        { role: "system", content: "You are a coding assistant helping Nasir with the MCMS-pp-diredawa project." },
         { role: "user", content: question }
       ],
     });

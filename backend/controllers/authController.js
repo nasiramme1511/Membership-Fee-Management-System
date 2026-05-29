@@ -55,10 +55,16 @@ exports.login = async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = await User.findOne({
-      where: { email: cleanEmail },
-      include: [{ model: SectorUnit, as: 'assignedSectorUnit', attributes: ['id', 'name'] }]
-    });
+    let user;
+    try {
+      user = await User.findOne({
+        where: { email: cleanEmail },
+        include: [{ model: SectorUnit, as: 'assignedSectorUnit', attributes: ['id', 'name'] }]
+      });
+    } catch (includeErr) {
+      console.warn('SectorUnit include failed, falling back to basic lookup:', includeErr.message);
+      user = await User.findOne({ where: { email: cleanEmail } });
+    }
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
@@ -95,10 +101,18 @@ exports.login = async (req, res) => {
 // Get current user
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findByPk(req.userId, {
-      attributes: { exclude: ['password'] },
-      include: [{ model: SectorUnit, as: 'assignedSectorUnit', attributes: ['id', 'name'] }]
-    });
+    let user;
+    try {
+      user = await User.findByPk(req.userId, {
+        attributes: { exclude: ['password'] },
+        include: [{ model: SectorUnit, as: 'assignedSectorUnit', attributes: ['id', 'name'] }]
+      });
+    } catch (includeErr) {
+      console.warn('SectorUnit include failed in getMe, falling back to basic lookup:', includeErr.message);
+      user = await User.findByPk(req.userId, {
+        attributes: { exclude: ['password'] }
+      });
+    }
     if (!user) {
       return res.status(401).json({ success: false, message: 'User not found.' });
     }

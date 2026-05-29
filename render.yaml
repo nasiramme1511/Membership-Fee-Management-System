@@ -1,4 +1,4 @@
-version: 1
+mversion: 1
 services:
   - type: web
     name: mcms-app
