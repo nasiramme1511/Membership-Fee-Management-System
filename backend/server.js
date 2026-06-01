@@ -1,4 +1,4 @@
-// server.js - MCMS DDU Backend (Production-Ready Monolith)
+// server.js - Membership Fee Contribution For Prosperity Party Dire Dawa Branch Office Backend (Production-Ready Monolith)
 'use strict';
 
 const express  = require('express');
@@ -84,37 +84,26 @@ const seedInitialUsers = async () => {
   try {
     const { sequelize } = require('./config/db');
     const User = require('./models/User');
-    const bcrypt = require('bcryptjs');
 
-    const [admin, operator, adminPP] = await Promise.all([
-      User.findOne({ where: { email: 'admin@mcms.ddu' } }),
-      User.findOne({ where: { email: 'operator@mcms.ddu' } }),
-      User.findOne({ where: { email: 'admin@pp-diredawa.org' } })
-    ]);
+    const usersToCreate = [
+      { username: 'admin',     email: 'admin@mcms.ddu',       password: 'admin123',    fullName: 'System Administrator',     role: 'admin' },
+      { username: 'operator',  email: 'operator@mcms.ddu',    password: 'operator123', fullName: 'System Operator',          role: 'sector_officer' },
+      { username: 'admin-pp',  email: 'admin@pp-dd-branch.org', password: 'admin123',  fullName: 'PP Dire Dawa Administrator', role: 'admin' }
+    ];
 
-    if (!admin) {
-      await User.create({
-        username: 'admin', email: 'admin@mcms.ddu',
-        password: 'admin123', fullName: 'System Administrator', role: 'admin'
-      });
-      console.log('✅ Auto-created admin: admin@mcms.ddu / admin123');
-    }
-    if (!operator) {
-      await User.create({
-        username: 'operator', email: 'operator@mcms.ddu',
-        password: 'operator123', fullName: 'System Operator', role: 'sector_officer'
-      });
-      console.log('✅ Auto-created operator: operator@mcms.ddu / operator123');
-    }
-    if (!adminPP) {
-      await User.create({
-        username: 'admin-pp', email: 'admin@pp-diredawa.org',
-        password: 'admin123', fullName: 'PP Dire Dawa Administrator', role: 'admin'
-      });
-      console.log('✅ Auto-created admin: admin@pp-diredawa.org / admin123');
+    for (const u of usersToCreate) {
+      try {
+        const exists = await User.findOne({ where: { email: u.email } });
+        if (!exists) {
+          await User.create(u);
+          console.log(`✅ Auto-created: ${u.email} / ${u.password}`);
+        }
+      } catch (e) {
+        console.error(`⚠️  Failed to create ${u.email}: ${e.message}`);
+      }
     }
   } catch (err) {
-    console.error('⚠️ Auto-seed skipped (DB not ready):', err.message);
+    console.error('⚠️ Auto-seed error:', err.message);
   }
 };
 
@@ -215,12 +204,30 @@ const start = async () => {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log('==========================================');
-    console.log(`🚀 MCMS Server running on port ${PORT}`);
-    console.log(`📊 Environment : ${process.env.NODE_ENV}`);
-    console.log(`🗄️  Database   : ${process.env.DB_HOST}:${process.env.DB_PORT}`);
-    console.log('==========================================');
+    console.log('');
+    console.log('╔═══════════════════════════════════════════════════════════════╗');
+    console.log('║          🚀 MFC for PP-DD Branch SERVER STARTED             ║');
+    console.log('╠═══════════════════════════════════════════════════════════════╣');
+    console.log(`║  Port       : ${String(PORT).padEnd(51)}║`);
+    console.log(`║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(52)}║`);
+    console.log(`║  DB Host    : ${(process.env.DB_HOST || '(not set)').padEnd(52)}║`);
+    console.log(`║  DB Port    : ${(process.env.DB_PORT || '(not set)').padEnd(52)}║`);
+    console.log(`║  DB Name    : ${(process.env.DB_NAME || '(not set)').padEnd(52)}║`);
+    console.log(`║  DB SSL     : ${(process.env.DB_SSL || '(not set)').padEnd(52)}║`);
+    console.log('╚═══════════════════════════════════════════════════════════════╝');
+    console.log('');
   });
+
+  // Post-startup DB connectivity check
+  setTimeout(async () => {
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Database connection verified after startup.');
+    } catch (err) {
+      console.error('⚠️  Database is NOT reachable after startup. Login and all DB operations will fail.');
+      console.error(`   Reason: ${err.message}`);
+    }
+  }, 2000);
 };
 
 start();
