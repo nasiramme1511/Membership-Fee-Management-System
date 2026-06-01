@@ -1,7 +1,7 @@
-mversion: 1
+version: 1
 services:
   - type: web
-    name: mcms-app
+    name: mfc-pp-dd-branch-app
     env: node
     plan: free
     buildCommand: npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend

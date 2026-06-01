@@ -88,7 +88,7 @@ const seedInitialUsers = async () => {
     const usersToCreate = [
       { username: 'admin',     email: 'admin@mcms.ddu',       password: 'admin123',    fullName: 'System Administrator',     role: 'admin' },
       { username: 'operator',  email: 'operator@mcms.ddu',    password: 'operator123', fullName: 'System Operator',          role: 'sector_officer' },
-      { username: 'admin-pp',  email: 'admin@pp-dd-branch.org', password: 'admin123',  fullName: 'PP Dire Dawa Administrator', role: 'admin' }
+      { username: 'admin-pp',  email: 'admin@pp-diredawa.org', password: 'admin123',  fullName: 'PP Dire Dawa Administrator', role: 'admin' }
     ];
 
     for (const u of usersToCreate) {

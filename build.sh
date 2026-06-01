@@ -5,7 +5,7 @@
 set -e  # Exit immediately on any error
 
 echo "=========================================="
-echo "🔨 MCMS Production Build Starting..."
+echo "🔨 MFC PP-DD Branch Production Build Starting..."
 echo "=========================================="
 
 # Step 1: Install & Build Frontend

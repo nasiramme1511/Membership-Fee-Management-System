@@ -47,6 +47,7 @@ exports.register = async (req, res) => {
 
 // Login
 exports.login = async (req, res) => {
+  let cleanEmail = '';
   try {
     const { email, password } = req.body;
 
@@ -54,7 +55,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password.' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    cleanEmail = email.trim().toLowerCase();
     let user;
     try {
       user = await User.findOne({
@@ -93,7 +94,20 @@ exports.login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    let dbOk = 'UNKNOWN';
+    try {
+      await require('../config/db').sequelize.authenticate();
+      dbOk = 'YES';
+    } catch (_) { dbOk = 'NO'; }
+    console.error('');
+    console.error('╔═══════════════════════════════════════════════════════════════╗');
+    console.error('║  ❌ LOGIN ERROR                                             ║');
+    console.error('╠═══════════════════════════════════════════════════════════════╣');
+    console.error(`║  ${(error.message || String(error)).padEnd(62)}║`);
+    console.error(`║  DB Connected: ${String(dbOk).padEnd(52)}║`);
+    console.error(`║  User email : ${(cleanEmail || 'unknown').padEnd(52)}║`);
+    console.error('╚═══════════════════════════════════════════════════════════════╝');
+    console.error('');
     res.status(500).json({ success: false, message: 'Login failed due to a server error. Please try again.' });
   }
 };

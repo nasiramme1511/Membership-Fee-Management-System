@@ -1,7 +1,7 @@
 {
-  "name": "mcms-ddu-backend",
+  "name": "mfc-pp-dd-branch-backend",
   "version": "1.0.0",
-  "description": "MCMS-DDU Backend API - Membership Contribution Management System",
+  "description": "Membership Fee Contribution For Prosperity Party Dire Dawa Branch Office Backend API",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
@@ -13,7 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "mcms",
+    "mfc",
     "membership",
     "contribution",
     "dire-dawa"

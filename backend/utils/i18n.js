@@ -244,7 +244,7 @@ class I18nService {
         paymentReminder: 'Payment Reminder',
         paymentConfirmed: 'Payment Confirmed',
         defaulterAlert: 'Defaulter Alert',
-        welcomeMessage: 'Welcome to MCMS-DDU'
+        welcomeMessage: 'Welcome to Membership Fee Contribution For Prosperity Party Dire Dawa Branch Office'
       }
     };
   }
@@ -380,7 +380,7 @@ class I18nService {
         paymentReminder: 'የክፍያ ማስታወሻ',
         paymentConfirmed: 'ክፍያ ተረጋግጓል',
         defaulterAlert: 'ያልከፈለ ማስጠንቀቂያ',
-        welcomeMessage: 'እንኳን ወደ MCMS-DDU በደህና መጡ'
+        welcomeMessage: 'እንኳን ወደ Membership Fee Contribution For Prosperity Party Dire Dawa Branch Office በደህና መጡ'
       }
     };
   }

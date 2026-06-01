@@ -104,9 +104,23 @@ const connectDB = async (retries = 5) => {
         console.log(`DB connection attempt ${attempt}/${retries} failed: ${error.message}. Retrying in ${delay/1000}s...`);
         await new Promise(r => setTimeout(r, delay));
       } else {
-        console.error(`DB connection failed after ${retries} attempts:`, error.message);
-        console.error('Check: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSL');
-        console.log('Server continuing without database. Health checks and static assets will work, but API calls requiring DB will fail.');
+        console.error('');
+        console.error('╔═══════════════════════════════════════════════════════════════╗');
+        console.error('║         ❌ DATABASE CONNECTION FAILED                       ║');
+        console.error('╠═══════════════════════════════════════════════════════════════╣');
+        console.error(`║  Error: ${(error.message || '').padEnd(56)}║`);
+        console.error('║                                                               ║');
+        console.error('║  Check these environment variables in your hosting panel:     ║');
+        console.error('║  • DB_HOST     : ' + (process.env.DB_HOST || '(not set)').padEnd(51) + '║');
+        console.error('║  • DB_PORT     : ' + (process.env.DB_PORT || '(not set)').padEnd(51) + '║');
+        console.error('║  • DB_USER     : ' + (process.env.DB_USER || '(not set)').padEnd(51) + '║');
+        console.error('║  • DB_PASSWORD : ' + (process.env.DB_PASSWORD ? '(set)' : '(not set)').padEnd(51) + '║');
+        console.error('║  • DB_NAME     : ' + (process.env.DB_NAME || '(not set)').padEnd(51) + '║');
+        console.error('║  • DB_SSL      : ' + (process.env.DB_SSL || '(not set)').padEnd(51) + '║');
+        console.error('║                                                               ║');
+        console.error('║  For TiDB Cloud: DB_PORT=4000, DB_SSL=true                   ║');
+        console.error('╚═══════════════════════════════════════════════════════════════╝');
+        console.error('');
       }
     }
   }
