@@ -8,6 +8,7 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 import UserManagement from './pages/UserManagement'
+import AIAssistant from './pages/AIAssistant'
 import Layout from './components/Layout'
 import PublicLayout from './components/PublicLayout'
 import Landing from './pages/Landing'
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="profile" element={<Profile />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="ai-assistant" element={<AIAssistant />} />
       </Route>
     </Routes>
   )

@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import am from './locales/am.json';
+import or from './locales/or.json';
 
 i18n
   .use(LanguageDetector)
@@ -11,9 +12,14 @@ i18n
   .init({
     resources: {
       en: { translation: en },
-      am: { translation: am }
+      am: { translation: am },
+      or: { translation: or }
     },
-    fallbackLng: 'am', // Set Amharic as default based on user preference
+    fallbackLng: 'am',
+    detection: {
+      order: ['localStorage', 'cookie'],
+      caches: ['localStorage', 'cookie']
+    },
     interpolation: {
       escapeValue: false
     },

@@ -11,6 +11,7 @@ const path     = require('path');
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
+const DEBUG_DB = process.env.DEBUG_DB === 'true';
 
 // ── Crash Prevention ──────────────────────────────────────────────────────────
 // Node 15+ terminates on unhandled rejections. The DB connection runs async
@@ -75,6 +76,21 @@ Payment.hasMany(Receipt,   { foreignKey: 'paymentDbId', as: 'receipts',    onDel
 Contribution.belongsTo(Member, { foreignKey: 'memberDbId', as: 'memberInfo',    onDelete: 'CASCADE' });
 Member.hasMany(Contribution,   { foreignKey: 'memberDbId', as: 'contributions', onDelete: 'CASCADE' });
 
+// SectorPayment ↔ SectorUnit
+const SectorPayment = require('./models/SectorPayment');
+const SectorUnit    = require('./models/SectorUnit');
+SectorPayment.belongsTo(SectorUnit, { foreignKey: 'sectorUnitId', as: 'sectorUnit', onDelete: 'CASCADE' });
+SectorUnit.hasMany(SectorPayment,   { foreignKey: 'sectorUnitId', as: 'sectorPayments', onDelete: 'CASCADE' });
+SectorPayment.belongsTo(User, { foreignKey: 'uploadedBy', as: 'uploader', onDelete: 'SET NULL' });
+SectorPayment.belongsTo(User, { foreignKey: 'verifiedBy', as: 'verifier', onDelete: 'SET NULL' });
+
+// SectorPaymentAuditLog ↔ SectorPayment, User
+const SectorPaymentAuditLog = require('./models/SectorPaymentAuditLog');
+SectorPayment.hasMany(SectorPaymentAuditLog, { foreignKey: 'sectorPaymentId', as: 'auditLogs', onDelete: 'CASCADE' });
+SectorPaymentAuditLog.belongsTo(SectorPayment, { foreignKey: 'sectorPaymentId', as: 'sectorPayment', onDelete: 'CASCADE' });
+SectorPaymentAuditLog.belongsTo(User, { foreignKey: 'userId', as: 'user', onDelete: 'SET NULL' });
+
+
 // (connection now happens in start() below to avoid race conditions)
 
 // ── Auto-Seed Admin Users (Free tier: no shell/SSH) ─────────────────────────
@@ -88,23 +104,24 @@ const seedInitialUsers = async () => {
     const usersToCreate = [
       { username: 'admin',     email: 'admin@mcms.ddu',       password: 'admin123',    fullName: 'System Administrator',     role: 'admin' },
       { username: 'operator',  email: 'operator@mcms.ddu',    password: 'operator123', fullName: 'System Operator',          role: 'sector_officer' },
-      { username: 'admin-pp',  email: 'admin@pp-diredawa.org', password: 'admin123',  fullName: 'PP Dire Dawa Administrator', role: 'admin' }
+      { username: 'admin-pp',  email: 'admin@pp-diredawa.org', password: 'admin123',  fullName: 'PP Dire Dawa Administrator', role: 'admin' },
+      { username: 'superadmin', email: 'superadmin@pp-diredawa.org', password: 'superadmin123', fullName: 'Super Administrator', role: 'super_admin' }
     ];
 
     for (const u of usersToCreate) {
       try {
         const exists = await User.findOne({ where: { email: u.email } });
         if (exists) {
-          console.log(`⏭️  Skipped ${u.email} (already exists)`);
+          if (DEBUG_DB) console.log(`⏭️  Skipped ${u.email} (already exists)`);
           continue;
         }
         const existsByUsername = await User.findOne({ where: { username: u.username } });
         if (existsByUsername) {
-          console.log(`⚠️  Deleting stale user with username '${u.username}'...`);
+          if (DEBUG_DB) console.log(`⚠️  Deleting stale user with username '${u.username}'...`);
           await existsByUsername.destroy();
         }
         await User.create(u);
-        console.log(`✅ Auto-created: ${u.email} / ${u.password}`);
+        if (DEBUG_DB) console.log(`✅ Auto-created: ${u.email} / ${u.password}`);
       } catch (e) {
         console.error(`⚠️  Failed to create ${u.email}: ${e.message}`);
       }
@@ -130,6 +147,9 @@ app.use('/api/import',        require('./routes/importRoutes'));
 app.use('/api/settings',      require('./routes/settingRoutes'));
 app.use('/api/backup',        require('./routes/backupRoutes'));
 app.use('/api',               require('./routes/sectorRoutes'));
+app.use('/api/ai',            require('./routes/aiRoutes'));
+app.use('/api/analytics',     require('./routes/analyticsRoutes'));
+app.use('/api/sector-payments', require('./routes/sectorPaymentRoutes'));
 
 // Health Check (must be before SPA fallback)
 app.get('/api/health', (req, res) => {
@@ -174,7 +194,7 @@ if (isProduction) {
       res.sendFile(path.join(frontendDist, 'index.html'));
     });
 
-    console.log('✅ Serving React frontend from:', frontendDist);
+    if (DEBUG_DB) console.log('✅ Serving React frontend from:', frontendDist);
   } else {
     console.error('❌ Frontend dist not found at:', frontendDist);
     console.error('   Ensure npm run build completed successfully');
@@ -206,30 +226,40 @@ const PORT = process.env.PORT || 3000;
 const start = async () => {
   await connectDB();
 
+  try {
+    require('./migrations/create_ai_logs')();
+  } catch (e) {
+    console.error('⚠️ AI logs migration error:', e.message);
+  }
+  try {
+    require('./migrations/create_sector_payments')();
+  } catch (e) {
+    console.error('⚠️ Sector payments migration error:', e.message);
+  }
+  try {
+    require('./migrations/create_sector_payment_audit_logs')();
+  } catch (e) {
+    console.error('⚠️ Sector payment audit logs migration error:', e.message);
+  }
+  try {
+    require('./migrations/create_audit_logs')();
+  } catch (e) {
+    console.error('⚠️ Audit logs migration error:', e.message);
+  }
+
   if (isProduction && process.env.DB_SYNC === 'true') {
     setTimeout(seedInitialUsers, 3000);
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log('');
-    console.log('╔═══════════════════════════════════════════════════════════════╗');
-    console.log('║          🚀 MFC for PP-DD Branch SERVER STARTED             ║');
-    console.log('╠═══════════════════════════════════════════════════════════════╣');
-    console.log(`║  Port       : ${String(PORT).padEnd(51)}║`);
-    console.log(`║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(52)}║`);
-    console.log(`║  DB Host    : ${(process.env.DB_HOST || '(not set)').padEnd(52)}║`);
-    console.log(`║  DB Port    : ${(process.env.DB_PORT || '(not set)').padEnd(52)}║`);
-    console.log(`║  DB Name    : ${(process.env.DB_NAME || '(not set)').padEnd(52)}║`);
-    console.log(`║  DB SSL     : ${(process.env.DB_SSL || '(not set)').padEnd(52)}║`);
-    console.log('╚═══════════════════════════════════════════════════════════════╝');
-    console.log('');
+    console.log(`Server started successfully on port ${PORT}`);
   });
 
   // Post-startup DB connectivity check
   setTimeout(async () => {
     try {
       await sequelize.authenticate();
-      console.log('✅ Database connection verified after startup.');
+      if (DEBUG_DB) console.log('✅ Database connection verified after startup.');
     } catch (err) {
       console.error('⚠️  Database is NOT reachable after startup. Login and all DB operations will fail.');
       console.error(`   Reason: ${err.message}`);

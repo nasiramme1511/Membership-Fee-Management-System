@@ -2,6 +2,7 @@
 const Member  = require('../models/Member');
 const Payment = require('../models/Payment');
 const Receipt = require('../models/Receipt');
+const SectorPayment = require('../models/SectorPayment');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 
 exports.getDashboardStats = async (req, res) => {
@@ -120,20 +121,43 @@ exports.getDashboardStats = async (req, res) => {
       { type: Q }
     );
 
-    // ── Top contributors ──────────────────────────────────────────────────────
-    const topContributorsRaw = await Member.findAll({
-      attributes: ['fullName', 'memberId', 'contributionMonthlyFee', 'branch', 'sector'],
-      where: sectorId ? { sectorUnitId: sectorId } : {},
-      include: [{ model: require('../models/SectorUnit'), as: 'sectorUnit' }],
-      order: [['contributionMonthlyFee', 'DESC']],
-      limit: 10
-    });
-    const topContributors = topContributorsRaw.map(m => ({
-      fullName: m.fullName,
-      memberId: m.memberId,
-      branch:   m.sectorUnit?.name || m.sector || m.branch || '-',
-      contribution: { monthlyFee: Number(m.contributionMonthlyFee) || 0 }
-    }));
+    // ── Top contributors (by actual payment amount) ───────────────────────────
+    let topContributors;
+    if (sectorId) {
+      const topRaw = await sequelize.query(
+        `SELECT m.fullName, m.memberId, COALESCE(SUM(p.amount),0) AS totalPaid
+         FROM members m
+         JOIN payments p ON m.id = p.memberDbId AND p.status = 'Paid'
+         WHERE m.sectorUnitId = ${esc}
+         GROUP BY m.id, m.fullName, m.memberId
+         ORDER BY totalPaid DESC
+         LIMIT 10`,
+        { type: Q }
+      );
+      topContributors = topRaw.map(r => ({
+        fullName: r.fullName,
+        memberId: r.memberId,
+        branch:   '',
+        contribution: { monthlyFee: Number(r.totalPaid) || 0 }
+      }));
+    } else {
+      const topRaw = await sequelize.query(
+        `SELECT m.fullName, m.memberId, m.sector AS branch,
+                COALESCE(SUM(p.amount),0) AS totalPaid
+         FROM members m
+         JOIN payments p ON m.id = p.memberDbId AND p.status = 'Paid'
+         GROUP BY m.id, m.fullName, m.memberId, m.sector
+         ORDER BY totalPaid DESC
+         LIMIT 10`,
+        { type: Q }
+      );
+      topContributors = topRaw.map(r => ({
+        fullName: r.fullName,
+        memberId: r.memberId,
+        branch:   r.branch || '-',
+        contribution: { monthlyFee: Number(r.totalPaid) || 0 }
+      }));
+    }
 
     // ── Revenue by member type ─────────────────────────────────────────────────
     const revenueByType = await sequelize.query(
@@ -144,6 +168,53 @@ exports.getDashboardStats = async (req, res) => {
        GROUP BY m.membershipType`,
       { type: Q }
     );
+
+    // ── Sector Payment Metrics ──────────────────────────────────────────────────
+    // TEMPORARY: Deposit dashboard metrics disabled until reconciliation module is finalized
+    // All deposit values are hardcoded to 0. Sector payments records remain untouched.
+    const pendingDepositsAmount  = 0;
+    const approvedDepositsAmount = 0;
+    const rejectedDepositsAmount  = 0;
+    const pendingDepositsCount   = 0;
+    const approvedDepositsCount  = 0;
+    const rejectedDepositsCount  = 0;
+    const totalDepositedSector   = 0;
+
+    // ── Sector-specific metrics (always computed for scoped view) ──────────────
+    const [sectorExpectedRow] = await sequelize.query(
+      `SELECT COALESCE(SUM(contributionMonthlyFee), 0) AS expectedAmount
+       FROM members WHERE status = 'Active' ${memberWhere}`,
+      { type: Q }
+    );
+    const sectorExpectedRevenue = Number(sectorExpectedRow?.expectedAmount) || 0;
+
+    const [sectorCollectedRow] = await sequelize.query(
+      `SELECT COALESCE(SUM(p.amount), 0) AS collectedAmount
+       FROM payments p
+       JOIN members m ON p.memberDbId = m.id
+       WHERE p.status = 'Paid' ${mWhere}`,
+      { type: Q }
+    );
+    const sectorCollectedAmount = Number(sectorCollectedRow?.collectedAmount) || 0;
+
+    const [sectorMembersRow] = await sequelize.query(
+      `SELECT COUNT(*) AS cnt FROM members WHERE status = 'Active' ${memberWhere}`,
+      { type: Q }
+    );
+    const sectorTotalMembers = Number(sectorMembersRow?.cnt) || 0;
+
+    const [sectorPaidRow] = await sequelize.query(
+      `SELECT COUNT(DISTINCT p.memberDbId) AS cnt
+       FROM payments p
+       JOIN members m ON p.memberDbId = m.id
+       WHERE p.status = 'Paid' AND m.status = 'Active' ${mWhere}`,
+      { type: Q }
+    );
+    const sectorPaidMembers = Number(sectorPaidRow?.cnt) || 0;
+    const sectorUnpaidMembers = sectorTotalMembers - sectorPaidMembers;
+
+    const remainingBalanceSector = 0; // TEMPORARY: disabled until reconciliation is finalized
+    const sectorCollectionRate = sectorTotalMembers > 0 ? Math.round((sectorPaidMembers / sectorTotalMembers) * 100) : 0;
 
     // ── Members by Category (for sector officer view) ──────────────────────────
     const membersByCategory = await sequelize.query(
@@ -179,6 +250,22 @@ exports.getDashboardStats = async (req, res) => {
         })),
         topContributors,
         revenueByType,
+        sectorPaymentMetrics: {
+          pendingDeposits:     pendingDepositsAmount,
+          approvedDeposits:    approvedDepositsAmount,
+          rejectedDeposits:    rejectedDepositsAmount,
+          pendingDepositsCount,
+          approvedDepositsCount,
+          rejectedDepositsCount,
+          totalDeposited:      totalDepositedSector,
+          remainingBalance:    remainingBalanceSector,
+          collectionRate:      sectorCollectionRate,
+          expectedRevenue:     sectorExpectedRevenue,
+          collectedAmount:     sectorCollectedAmount,
+          totalMembers:        sectorTotalMembers,
+          paidMembers:         sectorPaidMembers,
+          unpaidMembers:       sectorUnpaidMembers
+        },
         scopedToSector: !!sectorId
       }
     });

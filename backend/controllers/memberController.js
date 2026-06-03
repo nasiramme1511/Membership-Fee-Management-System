@@ -8,6 +8,7 @@ const Contribution = require('../models/Contribution');
 const Setting = require('../models/Setting');
 const ClassificationEngine = require('../utils/classificationEngine');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
+const { createAuditLog } = require('../utils/auditLogger');
 
 // ─── Helper: flatten nested member data → flat DB columns ────────────────────
 function flattenMemberData(data) {
@@ -533,13 +534,14 @@ exports.bulkAppendMembers = async (req, res) => {
 
 // ─── Bulk delete members ──────────────────────────────────────────────────────
 exports.bulkDeleteMembers = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
+      await t.rollback();
       return res.status(400).json({ success: false, message: 'Please provide an array of member IDs.' });
     }
 
-    const { Op } = require('sequelize');
     const where = { id: { [Op.in]: ids } };
 
     // Sector officers restriction: only delete their own unit's members
@@ -547,21 +549,32 @@ exports.bulkDeleteMembers = async (req, res) => {
       where.sectorUnitId = req.user.sectorUnitId;
     }
 
-    // Delete all associated records first
+    // Delete all associated records first within transaction
     const whereMembers = { memberDbId: { [Op.in]: ids } };
-    await Receipt.destroy({ where: whereMembers });
-    await Payment.destroy({ where: whereMembers });
-    await Contribution.destroy({ where: whereMembers });
+    await Receipt.destroy({ where: whereMembers, transaction: t });
+    await Payment.destroy({ where: whereMembers, transaction: t });
+    await Contribution.destroy({ where: whereMembers, transaction: t });
 
-    const deletedCount = await Member.destroy({ where });
+    const deletedCount = await Member.destroy({ where, transaction: t });
     await deleteFromBackupTables(ids);
-    
+
+    await t.commit();
+
+    await createAuditLog({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'BULK_DELETE_MEMBERS',
+      recordCount: deletedCount,
+      req
+    });
+
     res.json({ 
       success: true, 
       message: `${deletedCount} members deleted successfully`,
       data: { deletedCount }
     });
   } catch (error) {
+    await t.rollback();
     console.error('Bulk Delete Members Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
@@ -569,19 +582,31 @@ exports.bulkDeleteMembers = async (req, res) => {
 
 // ─── Bulk delete ALL members ─────────────────────────────────────────────────
 exports.bulkDeleteAllMembers = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     // Only admins can delete ALL members
     if (req.user.role !== 'admin') {
+      await t.rollback();
       return res.status(403).json({ success: false, message: 'Access denied: Only admins can delete all members.' });
     }
 
     // Clear all related tables to avoid orphaned records
-    await Receipt.destroy({ where: {} });
-    await Payment.destroy({ where: {} });
-    await Contribution.destroy({ where: {} });
+    await Receipt.destroy({ where: {}, transaction: t });
+    await Payment.destroy({ where: {}, transaction: t });
+    await Contribution.destroy({ where: {}, transaction: t });
     
-    const deletedCount = await Member.destroy({ where: {} });
+    const deletedCount = await Member.destroy({ where: {}, transaction: t });
     await deleteFromBackupTables([]);
+
+    await t.commit();
+
+    await createAuditLog({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'DELETE_ALL_MEMBERS',
+      recordCount: deletedCount,
+      req
+    });
     
     res.json({ 
       success: true, 
@@ -589,6 +614,7 @@ exports.bulkDeleteAllMembers = async (req, res) => {
       data: { deletedCount }
     });
   } catch (error) {
+    await t.rollback();
     console.error('Bulk Delete All Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }

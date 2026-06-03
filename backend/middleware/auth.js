@@ -31,7 +31,13 @@ exports.auth = async (req, res, next) => {
 // Role-based Authorization
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const effectiveRoles = roles.flatMap(r => {
+      if (r === 'admin') return ['admin', 'super_admin'];
+      if (r === 'sector_officer') return ['sector_officer'];
+      if (r === 'expert') return ['expert'];
+      return [r];
+    });
+    if (!effectiveRoles.includes(req.user.role)) {
       return res.status(403).json({ success: false, message: 'Access denied. Insufficient permissions.' });
     }
     next();

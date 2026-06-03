@@ -1,9 +1,12 @@
 // controllers/paymentController.js - Payment Controller (MySQL / Sequelize)
+const { Op } = require('sequelize');
+const { sequelize } = require('../config/db');
 const Payment  = require('../models/Payment');
 const Receipt  = require('../models/Receipt');
 const Member   = require('../models/Member');
 const Contribution = require('../models/Contribution');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
+const { createAuditLog } = require('../utils/auditLogger');
 
 // ─── Record a new payment ─────────────────────────────────────────────────────
 exports.createPayment = async (req, res) => {
@@ -139,38 +142,50 @@ exports.getPayments = async (req, res) => {
       order: [['paymentDate', 'DESC']]
     });
 
-    const memberFilter = Object.keys(memberWhere).length > 0 ? memberWhere : undefined;
-    const totalMemberCount = await Member.count({ where: memberFilter });
-    const totalMonthlyRevenue = await Member.sum('contributionMonthlyFee', { where: memberFilter });
-    const totalYearlyRevenue = await Member.sum('contributionAnnualFee', { where: memberFilter });
+    const monthNum = req.query.month ? Number(req.query.month) : getEthiopianMonth();
+    const yearNum  = req.query.year  ? Number(req.query.year)  : getEthiopianYear();
+
+    // If member-level filters are active, resolve matching member IDs first
+    let memberDbIds = null;
+    if (Object.keys(memberWhere).length > 0) {
+      const matchingMembers = await Member.findAll({ where: memberWhere, attributes: ['id'] });
+      memberDbIds = matchingMembers.map(m => m.id);
+    }
+
+    const summary = {
+      totalMembers: 0,
+      totalMonthlyRevenue: 0,
+      totalYearlyRevenue: 0
+    };
+
+    const payWhere = { status: 'Paid' };
+    if (memberDbIds) payWhere.memberDbId = { [Op.in]: memberDbIds };
+
+    // Run all summary queries in parallel
+    await Promise.all([
+      (async () => {
+        summary.totalMembers = await Payment.count({
+          distinct: true,
+          col: 'memberDbId',
+          where: { ...payWhere, periodMonth: monthNum, periodYear: yearNum }
+        });
+      })(),
+      (async () => {
+        summary.totalMonthlyRevenue = await Payment.sum('amount', {
+          where: { ...payWhere, periodMonth: monthNum, periodYear: yearNum }
+        }) || 0;
+      })(),
+      (async () => {
+        summary.totalYearlyRevenue = await Payment.sum('amount', {
+          where: { ...payWhere, periodYear: yearNum }
+        }) || 0;
+      })()
+    ]);
 
     res.json({
       success: true,
       data: payments,
-      summary: {
-        totalMembers: await Payment.count({ 
-          distinct: true, 
-          col: 'memberDbId', 
-          where: { 
-            ...where, 
-            periodMonth: req.query.month || getEthiopianMonth(),
-            periodYear: req.query.year || getEthiopianYear()
-          } 
-        }),
-        totalMonthlyRevenue: await Payment.sum('amount', { 
-          where: { 
-            ...where, 
-            periodMonth: req.query.month || getEthiopianMonth(),
-            periodYear: req.query.year || getEthiopianYear()
-          } 
-        }) || 0,
-        totalYearlyRevenue: await Payment.sum('amount', { 
-          where: { 
-            ...where, 
-            periodYear: req.query.year || getEthiopianYear()
-          } 
-        }) || 0
-      },
+      summary,
       pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) }
     });
   } catch (error) {
@@ -374,36 +389,33 @@ exports.getMonthlyStatus = async (req, res) => {
     });
 
     // Calculate summary based on recorded payments
+    const payWhere = { status: 'Paid' };
+    if (req.query.sectorId) {
+      const matchingMembers = await Member.findAll({ where: { sectorUnitId: req.query.sectorId }, attributes: ['id'] });
+      const ids = matchingMembers.map(m => m.id);
+      if (ids.length > 0) payWhere.memberDbId = { [Op.in]: ids };
+    }
+
     const totalPaidMembers = await Payment.count({
       distinct: true,
       col: 'memberDbId',
-      where: { 
-        periodMonth: targetMonth, 
-        periodYear: targetYear,
-        ...(req.query.sectorId ? { memberDbId: { [Op.in]: sequelize.literal(`(SELECT id FROM members WHERE sectorUnitId = ${req.query.sectorId})`) } } : {})
-      }
+      where: { ...payWhere, periodMonth: targetMonth, periodYear: targetYear }
     });
 
     const totalMonthlyRevenue = await Payment.sum('amount', { 
-      where: { 
-        periodMonth: targetMonth, 
-        periodYear: targetYear,
-        ...(req.query.sectorId ? { memberDbId: { [Op.in]: sequelize.literal(`(SELECT id FROM members WHERE sectorUnitId = ${req.query.sectorId})`) } } : {})
-      } 
+      where: { ...payWhere, periodMonth: targetMonth, periodYear: targetYear }
     }) || 0;
 
     const totalYearlyRevenue = await Payment.sum('amount', { 
-      where: { 
-        periodYear: targetYear,
-        ...(req.query.sectorId ? { memberDbId: { [Op.in]: sequelize.literal(`(SELECT id FROM members WHERE sectorUnitId = ${req.query.sectorId})`) } } : {})
-      } 
+      where: { ...payWhere, periodYear: targetYear }
     }) || 0;
 
     res.json({
       success: true,
       data: mappedMembers,
       summary: {
-        totalMembers: totalPaidMembers,
+        totalMembers: total, // actual total members matching the filter
+        totalPaidMembers,
         totalMonthlyRevenue: totalMonthlyRevenue,
         totalYearlyRevenue: totalYearlyRevenue
       },
@@ -454,6 +466,74 @@ exports.deletePayment = async (req, res) => {
     
     res.json({ success: true, message: 'Payment deleted successfully' });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─── Bulk delete payments ────────────────────────────────────────────────────
+exports.bulkDeletePayments = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Please provide an array of payment IDs.' });
+    }
+
+    // Delete related receipts first
+    await Receipt.destroy({ where: { paymentDbId: { [Op.in]: ids } }, transaction: t });
+
+    const deletedCount = await Payment.destroy({ where: { id: { [Op.in]: ids } }, transaction: t });
+
+    await t.commit();
+
+    await createAuditLog({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'BULK_DELETE_PAYMENTS',
+      recordCount: deletedCount,
+      req
+    });
+
+    res.json({
+      success: true,
+      message: `${deletedCount} payments deleted successfully`,
+      data: { deletedCount }
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error('Bulk Delete Payments Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─── Delete all payments ──────────────────────────────────────────────────────
+exports.bulkDeleteAllPayments = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    // Delete related receipts first
+    await Receipt.destroy({ where: {}, transaction: t });
+
+    const deletedCount = await Payment.destroy({ where: {}, transaction: t });
+
+    await t.commit();
+
+    await createAuditLog({
+      userId: req.user.id,
+      username: req.user.username,
+      actionType: 'DELETE_ALL_PAYMENTS',
+      recordCount: deletedCount,
+      req
+    });
+
+    res.json({
+      success: true,
+      message: `All records (Payments: ${deletedCount}) cleared successfully`,
+      data: { deletedCount }
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error('Delete All Payments Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

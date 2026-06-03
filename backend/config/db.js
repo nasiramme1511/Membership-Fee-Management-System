@@ -1,6 +1,7 @@
 const { Sequelize } = require('sequelize');
 
 const isProduction = process.env.NODE_ENV === 'production';
+const DEBUG_DB = process.env.DEBUG_DB === 'true';
 
 const sslConfig = process.env.DB_SSL === 'true'
   ? {
@@ -18,7 +19,7 @@ const dialectOptions = {
 
 const sharedOptions = {
   dialect: 'mysql',
-  logging: isProduction ? false : (msg) => console.log(`[SQL] ${msg}`),
+  logging: DEBUG_DB ? (msg) => console.log(`[SQL] ${msg}`) : false,
   pool: {
     max: 10,
     min: 0,
@@ -61,9 +62,11 @@ const connectDB = async (retries = 5) => {
       }
 
       await sequelize.authenticate();
-      console.log(`MySQL connected to: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
+      console.log('Database connected successfully');
+      if (DEBUG_DB) console.log(`MySQL connected to: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`);
 
       if (!associationsDefined) {
+        associationsDefined = true;
         require('../models/User');
         const SectorType         = require('../models/SectorType');
         const SectorUnit         = require('../models/SectorUnit');
@@ -74,6 +77,9 @@ const connectDB = async (retries = 5) => {
         require('../models/Payment');
         require('../models/Receipt');
         require('../models/Setting');
+        const SectorPayment      = require('../models/SectorPayment');
+        const SectorPaymentAuditLog = require('../models/SectorPaymentAuditLog');
+        const User               = require('../models/User');
 
         SectorType.hasMany(SectorUnit, { foreignKey: 'sectorTypeId', as: 'units' });
         SectorUnit.belongsTo(SectorType, { foreignKey: 'sectorTypeId', as: 'sectorType' });
@@ -90,18 +96,17 @@ const connectDB = async (retries = 5) => {
           otherKey: 'sectorUnitId',
           as: 'sectorUnits'
         });
-        associationsDefined = true;
       }
 
       await sequelize.sync({ alter: false });
-      console.log('DB tables synced');
+      if (DEBUG_DB) console.log('DB tables synced');
 
       return;
 
     } catch (error) {
       if (attempt < retries) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
-        console.log(`DB connection attempt ${attempt}/${retries} failed: ${error.message}. Retrying in ${delay/1000}s...`);
+        if (DEBUG_DB) console.log(`DB connection attempt ${attempt}/${retries} failed: ${error.message}. Retrying in ${delay/1000}s...`);
         await new Promise(r => setTimeout(r, delay));
       } else {
         console.error('');

@@ -8,6 +8,7 @@ import MemberModal from '../components/MemberModal'
 import ImportModal from '../components/ImportModal'
 import FastEntryModal from '../components/FastEntryModal'
 import ConfirmDialog from '../components/ConfirmDialog'
+import DeleteAllConfirmDialog from '../components/DeleteAllConfirmDialog'
 import { getCurrentEthiopianPeriod } from '../utils/ethiopianCalendar'
 
 interface Member {
@@ -297,7 +298,7 @@ export default function Members() {
     setConfirmBulkDelete(false)
     setDeletingBulk(true)
     try {
-      await api.post('/members/bulk-delete', { ids: selectedIds })
+      await api.delete('/members/bulk-delete', { data: { ids: selectedIds } })
       setSelectedIds([])
       fetchMembers()
     } catch (error: any) {
@@ -315,7 +316,7 @@ export default function Members() {
     setConfirmClearAll(false)
     setDeletingAll(true)
     try {
-      await api.post('/members/bulk-delete-all')
+      await api.delete('/members/delete-all')
       setSelectedIds([])
       fetchMembers()
     } catch (error: any) {
@@ -534,7 +535,7 @@ export default function Members() {
               {t('common.clear_all')}
             </button>
           )}
-          {user?.role !== 'expert' && selectedIds.length > 0 && (
+          {user?.role === 'admin' && selectedIds.length > 0 && (
             <button 
               onClick={handleBulkDelete} 
               disabled={deletingBulk}
@@ -747,14 +748,16 @@ export default function Members() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleBulkDelete}
-              disabled={deletingBulk}
-              className="bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
-            >
-              {deletingBulk ? <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {t('common.delete_selected')}
-            </button>
+            {user?.role === 'admin' && (
+              <button 
+                onClick={handleBulkDelete}
+                disabled={deletingBulk}
+                className="bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
+              >
+                {deletingBulk ? <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {t('common.delete_selected')}
+              </button>
+            )}
             {user?.role === 'admin' && (
               <button 
                 onClick={handleBulkDeleteAll}
@@ -986,13 +989,11 @@ export default function Members() {
         onCancel={() => setConfirmBulkDelete(false)}
       />
 
-      <ConfirmDialog
+      <DeleteAllConfirmDialog
         open={confirmClearAll}
-        variant="danger"
-        title="Clear All Members"
-        message="This will permanently delete ALL members in the system. This is an irreversible administrative action. Please confirm to proceed."
-        confirmLabel="Clear All Members"
-        cancelLabel="Cancel"
+        title="Delete All Members"
+        message="This will permanently delete ALL members and their associated records. This action cannot be undone."
+        confirmText="DELETE ALL MEMBERS"
         onConfirm={doClearAll}
         onCancel={() => setConfirmClearAll(false)}
       />
