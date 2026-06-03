@@ -41,7 +41,9 @@ module.exports = async () => {
       'collectedAmount DECIMAL(15,2) NULL',
       'validationDifference DECIMAL(15,2) NULL',
       "validationStatus ENUM('VALID','WARNING','FLAGGED') NULL",
-      'isClosed TINYINT(1) DEFAULT 0'
+      'isClosed TINYINT(1) DEFAULT 0',
+      'approvedDeposits DECIMAL(15,2) NULL',
+      'remainingBalance DECIMAL(15,2) NULL'
     ];
     for (const col of newColumns) {
       const colName = col.split(' ')[0];

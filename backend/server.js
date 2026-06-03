@@ -8,7 +8,7 @@ const fs       = require('fs');
 const path     = require('path');
 
 // Load env vars first
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') { dotenv.config(); }
 
 const isProduction = process.env.NODE_ENV === 'production';
 const DEBUG_DB = process.env.DEBUG_DB === 'true';
@@ -248,12 +248,19 @@ const start = async () => {
     console.error('⚠️ Audit logs migration error:', e.message);
   }
 
+  // ── Expand User.role enum to include super_admin ───────────────────────
+  try {
+    require('./migrations/alter_user_role_enum')();
+  } catch (e) {
+    console.error('⚠️ User role enum migration error:', e.message);
+  }
+
   // Always seed essential users in production (safe — skips existing users)
   if (isProduction) {
     setTimeout(seedInitialUsers, 3000);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, () => {
     console.log(`Server started successfully on port ${PORT}`);
   });
 
