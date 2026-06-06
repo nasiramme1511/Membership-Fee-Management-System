@@ -152,6 +152,7 @@ exports.getPayments = async (req, res) => {
       memberDbIds = matchingMembers.map(m => m.id);
     }
 
+    // Summary respects all active member-level filters
     const summary = {
       totalMembers: 0,
       totalMonthlyRevenue: 0,
@@ -388,12 +389,36 @@ exports.getMonthlyStatus = async (req, res) => {
       };
     });
 
-    // Calculate summary based on recorded payments
-    const payWhere = { status: 'Paid' };
+    // Build filtered member IDs for summary (respect all active filters)
+    const summaryMemberWhere = {};
     if (req.query.sectorId) {
-      const matchingMembers = await Member.findAll({ where: { sectorUnitId: req.query.sectorId }, attributes: ['id'] });
-      const ids = matchingMembers.map(m => m.id);
-      if (ids.length > 0) payWhere.memberDbId = { [Op.in]: ids };
+      summaryMemberWhere.sectorUnitId = req.query.sectorId;
+    } else if (req.query.sectorType) {
+      const sectorTypeRec2 = await require('../models/SectorType').findOne({ where: { name: req.query.sectorType } });
+      if (sectorTypeRec2) {
+        const units2 = await require('../models/SectorUnit').findAll({ where: { sectorTypeId: sectorTypeRec2.id }, attributes: ['id'] });
+        summaryMemberWhere.sectorUnitId = { [Op.in]: units2.map(u => u.id) };
+      }
+    }
+    if (req.query.categoryId) summaryMemberWhere.memberCategoryId = req.query.categoryId;
+    if (req.query.membershipType) summaryMemberWhere.membershipType = req.query.membershipType;
+
+    const payWhere = { status: 'Paid' };
+    if (Object.keys(summaryMemberWhere).length > 0) {
+      const filteredMembers = await Member.findAll({ where: summaryMemberWhere, attributes: ['id'] });
+      const filteredIds = filteredMembers.map(m => m.id);
+      if (filteredIds.length > 0) {
+        payWhere.memberDbId = { [Op.in]: filteredIds };
+      } else {
+        // No matching members → zero out summary
+        return res.json({
+          success: true,
+          data: mappedMembers,
+          summary: { totalMembers: total, totalPaidMembers: 0, totalMonthlyRevenue: 0, totalYearlyRevenue: 0 },
+          pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) },
+          period: { month: targetMonth, year: targetYear }
+        });
+      }
     }
 
     const totalPaidMembers = await Payment.count({
