@@ -323,7 +323,7 @@ exports.sectorReport = async (req, res) => {
 
     const month = Number(req.query.month) || getEthiopianMonth();
     const year  = Number(req.query.year)  || getEthiopianYear();
-    const { unitId, categoryId, paymentStatus } = req.query;
+    const { unitId, categoryId, paymentStatus, periodType = 'monthly', sectorType } = req.query;
 
     // Role-based access: sector_officer can only see their own sector
     let effectiveSectorId = req.query.sectorId;
@@ -347,8 +347,24 @@ exports.sectorReport = async (req, res) => {
     if (categoryId) {
       mConds.push(`m.memberCategoryId = ${sequelize.escape(categoryId)}`);
     }
+    if (sectorType) {
+      mConds.push(`su.sectorTypeId = (SELECT id FROM sector_types WHERE name = ${sequelize.escape(sectorType)})`);
+    }
 
     const memberWhere = mConds.join(' AND ');
+
+    let paymentWhere = `status = 'Paid' AND periodYear = ?`;
+    let payReplacements = [year];
+
+    if (periodType === 'monthly') {
+      paymentWhere += ` AND periodMonth = ?`;
+      payReplacements.push(month);
+    } else if (periodType === 'quarterly') {
+      const qStart = Math.floor((month - 1) / 3) * 3 + 1;
+      const qEnd = qStart + 2;
+      paymentWhere += ` AND periodMonth BETWEEN ? AND ?`;
+      payReplacements.push(qStart, qEnd);
+    }
 
     const rows = await sequelize.query(`
       SELECT
@@ -363,13 +379,13 @@ exports.sectorReport = async (req, res) => {
       LEFT JOIN (
         SELECT memberDbId, SUM(amount) AS amount
         FROM payments
-        WHERE status = 'Paid' AND periodMonth = ? AND periodYear = ?
+        WHERE ${paymentWhere}
         GROUP BY memberDbId
       ) paid_p ON m.id = paid_p.memberDbId
       WHERE ${memberWhere}
       GROUP BY su.id, su.name
       ORDER BY su.name
-    `, { replacements, type: Q });
+    `, { replacements: [...payReplacements], type: Q });
 
     let sectors = rows.map(row => ({
       sectorId: row.sectorId,

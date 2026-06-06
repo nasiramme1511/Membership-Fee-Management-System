@@ -173,39 +173,39 @@ export default function Dashboard() {
   const statCards = [
     {
       title: isSectorOfficer ? t('common.sector_members') : t('common.total_members'),
-      value: analyticsSummary?.totalMembers ?? data.summary.totalMembers,
+      value: (analyticsSummary?.totalMembers ?? data.summary.totalMembers).toLocaleString(),
       icon: Users,
-      color: 'text-slate-900 dark:text-white',
+      color: 'text-blue-600',
       bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: 'border-slate-200 dark:border-slate-800',
+      borderColor: 'border-blue-100 dark:border-blue-900/30',
       subtext: `${data.summary.activeMembers} ${t('common.active')} ${t('common.members')}`
     },
     {
-      title: t('common.paid_members'),
-      value: analyticsSummary?.paidMembers ?? 0,
-      icon: TrendingUp,
+      title: t('common.monthly_revenue'),
+      value: `ETB ${Number(data.summary.monthlyRevenue).toLocaleString()}`,
+      icon: DollarSign,
       color: 'text-emerald-600',
       bgColor: 'bg-white dark:bg-slate-900',
       borderColor: 'border-emerald-100 dark:border-emerald-900/30',
-      subtext: `${analyticsSummary?.completionRate ?? 0}% ${t('common.completion_rate')}`
+      subtext: `${t('common.current_month')}`
     },
     {
-      title: t('common.unpaid_members'),
-      value: analyticsSummary?.unpaidMembers ?? data.summary.pendingPayments,
-      icon: AlertTriangle,
-      color: 'text-rose-600',
-      bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: 'border-rose-100 dark:border-rose-900/30',
-      subtext: `${data.summary.defaultedMembers} ${t('common.inactive')}`
-    },
-    {
-      title: t('common.collected_revenue'),
-      value: `ETB ${Number(analyticsSummary?.totalCollection ?? data.summary.yearlyRevenue).toLocaleString()}`,
-      icon: DollarSign,
+      title: t('common.yearly_revenue'),
+      value: `ETB ${Number(data.summary.yearlyRevenue).toLocaleString()}`,
+      icon: TrendingUp,
       color: 'text-[var(--gold)]',
       bgColor: 'bg-white dark:bg-slate-900',
       borderColor: 'border-[var(--gold)]/30',
-      subtext: `ETB ${Number(data.summary.monthlyRevenue).toLocaleString()} ${t('common.just_now')}`
+      subtext: `${t('common.current_year')}`
+    },
+    {
+      title: t('common.payment_status'),
+      value: `${analyticsSummary?.completionRate ?? 0}%`,
+      icon: AlertTriangle,
+      color: (analyticsSummary?.completionRate ?? 0) >= 75 ? 'text-emerald-600' : (analyticsSummary?.completionRate ?? 0) >= 50 ? 'text-amber-500' : 'text-rose-600',
+      bgColor: 'bg-white dark:bg-slate-900',
+      borderColor: (analyticsSummary?.completionRate ?? 0) >= 75 ? 'border-emerald-100 dark:border-emerald-900/30' : (analyticsSummary?.completionRate ?? 0) >= 50 ? 'border-amber-100 dark:border-amber-900/30' : 'border-rose-100 dark:border-rose-900/30',
+      subtext: `${analyticsSummary?.paidMembers ?? 0} paid / ${analyticsSummary?.unpaidMembers ?? data.summary.pendingPayments} unpaid`
     }
   ]
 
@@ -245,32 +245,14 @@ export default function Dashboard() {
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
             <span className="text-[var(--gold)]">{t('common.app_title')}</span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium ml-2 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-              {currentLang === 'am' ? 'የድሬዳዋ አስተዳደር መንግስት ተቋማት' : 'Dire Dawa Administration Institutions'}
-            </span>
           </h1>
-          {user?.role === 'admin' && (
-            <p className="text-[11px] text-slate-500 font-medium">
-              {currentLang === 'am'
-                ? 'የድሬዳዋ አስተዳደር መንግስት ተቋማት የአባልነት መዋጮ አስተዳደር ስርዓት'
-                : 'Dire Dawa Administration Institutions membership contribution management system'
-              }
-            </p>
-          )}
           {user?.role === 'sector_officer' && (
             <p className="text-[11px] text-slate-500 font-medium">
               {currentLang === 'am' ? 'ዘርፍ' : 'Sector'}: <span className="text-[var(--gold)] font-bold">{user?.assignedSectorUnit?.name || 'Assigned Sector'}</span>
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => exportReport('pdf')} className="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5" /> PDF
-          </button>
-          <button onClick={() => exportReport('csv')} className="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
-            <Download className="w-3.5 h-3.5" /> CSV
-          </button>
-        </div>
+
       </motion.div>
 
       {/* Stats Grid */}
@@ -299,43 +281,7 @@ export default function Dashboard() {
         ))}
       </motion.div>
 
-      {/* Sector Payment Metrics Grid */}
-      {data.sectorPaymentMetrics && (
-        <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.expected_revenue')}</p>
-            <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(data.sectorPaymentMetrics.expectedRevenue).toLocaleString()}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{t('common.total_members')}: {data.sectorPaymentMetrics.totalMembers}</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-emerald-200 dark:border-emerald-900/30 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.collected_revenue')}</p>
-            <p className="text-xl font-black text-emerald-600">ETB {Number(data.sectorPaymentMetrics.collectedAmount).toLocaleString()}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{t('common.paid_members')}: {data.sectorPaymentMetrics.paidMembers}</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-[var(--gold)]/30 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.total_deposited')}</p>
-            <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(data.sectorPaymentMetrics.totalDeposited).toLocaleString()}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{t('common.approved_deposits')}</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-blue-200 dark:border-blue-900/30 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.pending_approvals')}</p>
-            <p className="text-xl font-black text-blue-600">{data.sectorPaymentMetrics.pendingDepositsCount}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{t('common.waiting_review')}</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-emerald-200 dark:border-emerald-900/30 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.approved_deposits')}</p>
-            <p className="text-xl font-black text-emerald-600">ETB {Number(data.sectorPaymentMetrics.approvedDeposits).toLocaleString()}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{data.sectorPaymentMetrics.approvedDepositsCount} {t('common.deposits')}</p>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} className="card border-b-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t('common.remaining_balance')}</p>
-            <p className={`text-xl font-black ${data.sectorPaymentMetrics.remainingBalance > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-              ETB {Number(data.sectorPaymentMetrics.remainingBalance).toLocaleString()}
-            </p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{t('common.collection_rate')}: {data.sectorPaymentMetrics.collectionRate}%</p>
-          </motion.div>
-        </motion.div>
-      )}
+
 
       {/* AI Insights Widget */}
       {aiInsights && (
@@ -385,52 +331,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Charts Row 1 */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Payment Trend */}
-        <motion.div whileHover={{ scale: 1.01 }} className="card">
-          <h3 className="text-lg font-semibold mb-4">{t('common.revenue_trend')}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.paymentTrend.slice(-12)}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="_id.month"
-                tickFormatter={(m) => t(`common.eth_month_${m}`)}
-              />
-              <YAxis />
-              <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-              <Legend />
-              <Line type="monotone" dataKey="revenue" stroke="#0ea5e9" strokeWidth={2} name="Revenue" />
-            </LineChart>
-          </ResponsiveContainer>
-        </motion.div>
 
-        {/* Paid vs Unpaid */}
-        {paidVsUnpaid.length > 0 && (
-          <motion.div whileHover={{ scale: 1.01 }} className="card">
-            <h3 className="text-lg font-semibold mb-4">Paid vs Unpaid Members</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={paidVsUnpaid}
-                  cx="50%" cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {paidVsUnpaid.map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => value.toLocaleString()} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </motion.div>
-        )}
-      </motion.div>
 
       {/* Charts Row 2 */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">

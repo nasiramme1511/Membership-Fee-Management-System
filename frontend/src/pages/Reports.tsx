@@ -1,26 +1,18 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '../lib/api'
 import { useTranslation } from 'react-i18next'
-import { Download, FileText, Filter, Wallet, Banknote, Building2, AlertTriangle, Users, Search, Printer } from 'lucide-react'
+import { Download, Filter, Wallet, Banknote, Users, Search, Printer, UserCheck, UserMinus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import { useAuth } from '../context/AuthContext'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { getCurrentEthiopianPeriod, ETHIOPIAN_MONTHS_EN_LIST } from '../utils/ethiopianCalendar'
 
-const COLORS = ['#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 const ITEMS_PER_PAGE = 10
 
 export default function Reports() {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const [monthlyData, setMonthlyData] = useState<any>(null)
-  const [yearlyData, setYearlyData] = useState<any>(null)
-  const [quarterlyData, setQuarterlyData] = useState<any>(null)
-  const [hqBranch, setHqBranch] = useState<any>(null)
-  const [defaulters, setDefaulters] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [reportType, setReportType] = useState('monthly')
+  const [periodType, setPeriodType] = useState('monthly')
   const [selectedMonth, setSelectedMonth] = useState(getCurrentEthiopianPeriod().month)
   const [selectedYear, setSelectedYear] = useState(getCurrentEthiopianPeriod().year)
   const [sectorTypes, setSectorTypes] = useState<any[]>([])
@@ -57,12 +49,8 @@ export default function Reports() {
   }, [selectedSectorId])
 
   useEffect(() => {
-    if (reportType === 'sectors') {
-      fetchSectorReport()
-    } else {
-      fetchReports()
-    }
-  }, [reportType, selectedMonth, selectedYear, selectedSectorType, selectedSectorId, selectedCategoryId, paymentStatus])
+    fetchSectorReport()
+  }, [periodType, selectedMonth, selectedYear, selectedSectorType, selectedSectorId, selectedCategoryId, paymentStatus])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -71,7 +59,7 @@ export default function Reports() {
   const fetchSectorReport = async () => {
     setSectorReportLoading(true)
     try {
-      const params: Record<string, any> = { month: selectedMonth, year: selectedYear }
+      const params: Record<string, any> = { month: selectedMonth, year: selectedYear, periodType }
       if (selectedSectorType) params.sectorType = selectedSectorType
       if (selectedSectorId) params.sectorId = selectedSectorId
       if (selectedCategoryId) params.memberCategoryId = selectedCategoryId
@@ -85,102 +73,26 @@ export default function Reports() {
     }
   }
 
-  const fetchReports = async () => {
-    setLoading(true)
-    try {
-      const filterParams: Record<string, any> = {}
-      if (selectedSectorType) filterParams.sectorType = selectedSectorType
-      if (selectedSectorId) filterParams.sectorId = selectedSectorId
-      if (selectedCategoryId) filterParams.memberCategoryId = selectedCategoryId
-      if (reportType === 'monthly') {
-        const res = await api.get('/reports/monthly-revenue', {
-          params: { month: selectedMonth, year: selectedYear, ...filterParams }
-        })
-        setMonthlyData(res.data.data)
-      } else if (reportType === 'yearly') {
-        const res = await api.get('/reports/yearly-revenue', {
-          params: { year: selectedYear, ...filterParams }
-        })
-        setYearlyData(res.data.data)
-      } else if (reportType === 'quarterly') {
-        const res = await api.get('/reports/quarterly-revenue', {
-          params: { year: selectedYear, ...filterParams }
-        })
-        setQuarterlyData(res.data.data)
-      } else if (reportType === 'hq-branch') {
-        const res = await api.get('/reports/hq-branch', {
-          params: { year: selectedYear, ...filterParams }
-        })
-        setHqBranch(res.data.data)
-      } else if (reportType === 'defaulters') {
-        const res = await api.get('/reports/defaulters', { params: filterParams })
-        setDefaulters(res.data.data)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleExport = async () => {
-    try {
-      const filterParams: Record<string, any> = {}
-      if (selectedSectorType) filterParams.sectorType = selectedSectorType
-      if (selectedSectorId) filterParams.sectorId = selectedSectorId
-      if (selectedCategoryId) filterParams.memberCategoryId = selectedCategoryId
-      filterParams.month = selectedMonth
-      filterParams.year = selectedYear
-
-      // Context-aware export: defaulters -> unpaid; revenue reports -> paid; otherwise all
-      if (reportType === 'defaulters') {
-        filterParams.paymentStatus = 'unpaid'
-      } else if (['monthly', 'yearly', 'quarterly', 'hq-branch'].includes(reportType)) {
-        filterParams.paymentStatus = 'paid'
-      }
-
-      const res = await api.get('/reports/export', { params: filterParams })
-      const data = res.data.data
-      
-      const XLSX = await import('xlsx')
-      
-      const membersWs = XLSX.utils.json_to_sheet(data.members)
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, membersWs, 'Members')
-      
-      const paymentsWs = XLSX.utils.json_to_sheet(data.payments)
-      XLSX.utils.book_append_sheet(wb, paymentsWs, 'Payments')
-      
-      const receiptsWs = XLSX.utils.json_to_sheet(data.receipts)
-      XLSX.utils.book_append_sheet(wb, receiptsWs, 'Receipts')
-      
-      const now = new Date()
-      XLSX.writeFile(wb, `PP-Dire-Dawa-Branch-Full-Report-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}.xlsx`)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   const handleSectorExport = async () => {
     if (!sectorReportData?.sectors) return
     const XLSX = await import('xlsx')
 
     const rows = sectorReportData.sectors.map((s: any) => ({
-      [t('common.sector_name')]: s.sectorName,
-      [t('common.total_members')]: s.totalMembers,
-      [t('common.paid_members')]: s.paidMembers,
-      [t('common.unpaid_members')]: s.unpaidMembers,
-      [t('common.total_revenue')]: s.totalRevenue,
-      [t('common.payment_percentage')]: `${s.paymentPercentage}%`
+      'SECTOR NAME': s.sectorName,
+      'TOTAL MEMBERS': s.totalMembers,
+      'PAID MEMBERS': s.paidMembers,
+      'UNPAID MEMBERS': s.unpaidMembers,
+      'TOTAL REVENUE': s.totalRevenue,
+      'PAYMENT %': `${s.paymentPercentage}%`
     }))
 
     rows.push({
-      [t('common.sector_name')]: 'TOTAL',
-      [t('common.total_members')]: sectorReportData.summary.totalMembers,
-      [t('common.paid_members')]: sectorReportData.summary.totalPaidMembers,
-      [t('common.unpaid_members')]: sectorReportData.summary.totalUnpaidMembers,
-      [t('common.total_revenue')]: sectorReportData.summary.totalRevenue,
-      [t('common.payment_percentage')]: `${sectorReportData.summary.overallCollectionRate}%`
+      'SECTOR NAME': 'TOTAL',
+      'TOTAL MEMBERS': sectorReportData.summary.totalMembers,
+      'PAID MEMBERS': sectorReportData.summary.totalPaidMembers,
+      'UNPAID MEMBERS': sectorReportData.summary.totalUnpaidMembers,
+      'TOTAL REVENUE': sectorReportData.summary.totalRevenue,
+      'PAYMENT %': `${sectorReportData.summary.overallCollectionRate}%`
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -220,141 +132,131 @@ export default function Reports() {
     >
       <div className="flex items-center justify-between print:hidden">
         <div>
-          <h1 className="text-2xl font-bold">{t('common.reports')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">{t('common.financial_audit_reports')}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reports</h1>
+          <p className="text-slate-500">Financial and Audit Reports</p>
         </div>
         <div className="flex gap-2">
-          {reportType === 'sectors' ? (
-            <>
-              <button onClick={handleSectorExport} className="btn btn-primary flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                {t('common.export_excel')}
-              </button>
-              <button onClick={handlePrint} className="btn btn-secondary flex items-center gap-2">
-                <Printer className="w-4 h-4" />
-                {t('common.print')}
-              </button>
-            </>
-          ) : (
-            <button onClick={handleExport} className="btn btn-primary flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              {t('common.export_excel')}
-            </button>
-          )}
+          <button onClick={handleSectorExport} className="bg-[#dfab3b] hover:bg-[#c99a35] text-white px-4 py-2 rounded font-semibold flex items-center gap-2 text-sm shadow-sm transition-colors">
+            <Download className="w-4 h-4" />
+            Export All Data (Excel)
+          </button>
+          <button onClick={handlePrint} className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded font-semibold flex items-center gap-2 text-sm transition-colors">
+            <Printer className="w-4 h-4" />
+            Print
+          </button>
         </div>
       </div>
 
-      {reportType === 'sectors' && sectorReportData && !sectorReportLoading && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {sectorReportData && !sectorReportLoading && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: t('common.total_members'), value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-            { label: t('common.total_paid'), value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-            { label: t('common.total_unpaid'), value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: Users, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-            { label: t('common.total_revenue'), value: `ETB ${sectorReportData.summary.totalRevenue.toLocaleString()}`, icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-            { label: t('common.collection_rate'), value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
+            { label: 'Total Members', value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+            { label: 'Total Paid Members', value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+            { label: 'Total Unpaid Members', value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: UserMinus, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
+            { label: 'Total Revenue', value: `ETB ${sectorReportData.summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Wallet, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+            { label: 'Collection Rate', value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' }
           ].map((s, idx) => (
-            <div key={idx} className="card flex items-center gap-3">
-              <div className={`p-2.5 rounded-lg ${s.bg}`}><s.icon className={`w-4 h-4 ${s.color}`} /></div>
-              <div className="min-w-0">
-                <p className="text-lg font-bold truncate">{s.value}</p>
-                <p className="text-[10px] text-gray-500 truncate">{s.label}</p>
+            <div key={idx} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
+                <s.icon className={`w-6 h-6 ${s.color}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg xl:text-xl font-bold text-slate-900 dark:text-white break-words">{s.value}</p>
+                <p className="text-xs font-medium text-slate-500 mt-0.5 break-words">{s.label}</p>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="card print:hidden">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <span className="font-medium">{t('common.report_type')}:</span>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 print:hidden space-y-4">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="search_by_name_id_phone"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
           </div>
-          <select
-            value={reportType}
-            onChange={(e) => { setReportType(e.target.value); setPaymentStatus('') }}
-            className="input"
-          >
-            <option value="monthly">{t('common.monthly_revenue')}</option>
-            <option value="yearly">{t('common.yearly_revenue')}</option>
-            <option value="quarterly">{t('common.quarterly_revenue')}</option>
-            <option value="hq-branch">{t('common.hq_vs_branch')}</option>
-            <option value="defaulters">{t('common.defaulter_report')}</option>
-            <option value="sectors">{t('common.sector_report')}</option>
-          </select>
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
+            <Filter className="w-4 h-4" />
+            Filter
+          </button>
+        </div>
 
-          {user?.role !== 'sector_officer' && (
-            <select
-              value={selectedSectorType}
-              onChange={(e) => { setSelectedSectorType(e.target.value); setSelectedSectorId(''); setSelectedCategoryId(''); }}
-              className="input"
-            >
-              <option value="">{t('common.all_sector_types')}</option>
-              {sectorTypes.map(t_obj => (
-                <option key={t_obj.id} value={t_obj.name}>
-                  {t_obj.name === 'Institution' ? t('common.institution')
-                    : t_obj.name === 'Rural Cluster' ? t('common.rural')
-                    : t_obj.name === 'Urban Woreda' ? t('common.urban')
-                    : t_obj.name === 'Secondary School' ? t('common.secondary_school')
-                    : t_obj.name === 'Health Institution' ? t('common.health_institution')
-                    : t_obj.name}
-                </option>
-              ))}
-            </select>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <select
+            value={selectedSectorType}
+            onChange={(e) => { setSelectedSectorType(e.target.value); setSelectedSectorId(''); setSelectedCategoryId(''); }}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            disabled={user?.role === 'sector_officer'}
+          >
+            <option value="">All Sector Types</option>
+            {sectorTypes.map(t_obj => (
+              <option key={t_obj.id} value={t_obj.name}>{t_obj.name}</option>
+            ))}
+          </select>
 
           <select
             value={selectedSectorId}
             onChange={(e) => { setSelectedSectorId(e.target.value); setSelectedCategoryId(''); }}
-            className="input"
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
             disabled={!selectedSectorType && user?.role !== 'sector_officer'}
           >
-            <option value="">{t('common.all_units')}</option>
+            <option value="">All Units</option>
             {sectors.map(s => (
-              <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
 
           <select
             value={selectedCategoryId}
             onChange={(e) => setSelectedCategoryId(e.target.value)}
-            className="input"
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
-            <option value="">{t('common.all_categories')}</option>
+            <option value="">All Categories</option>
             {categories.map(c => (
-              <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
 
-          {reportType === 'sectors' && (
-            <select
-              value={paymentStatus}
-              onChange={(e) => setPaymentStatus(e.target.value)}
-              className="input"
-            >
-              <option value="">{t('common.all_statuses')}</option>
-              <option value="paid">{t('common.paid')}</option>
-              <option value="unpaid">{t('common.unpaid')}</option>
-            </select>
-          )}
+          <select
+            value={periodType}
+            onChange={(e) => setPeriodType(e.target.value)}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="monthly">monthly</option>
+            <option value="quarterly">quarterly</option>
+            <option value="yearly">yearly</option>
+          </select>
+
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">All Statuses</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+          </select>
 
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="input"
-            style={{ display: reportType === 'monthly' || reportType === 'sectors' ? 'block' : 'none' }}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {ETHIOPIAN_MONTHS_EN_LIST.map((name, idx) => (
-              <option key={idx + 1} value={idx + 1}>
-                {t(`common.eth_month_${idx + 1}`, { defaultValue: name })}
-              </option>
+              <option key={idx + 1} value={idx + 1}>{name}</option>
             ))}
           </select>
 
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="input"
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {Array.from({ length: 11 }, (_, i) => getCurrentEthiopianPeriod().year + 5 - i).map(y => (
               <option key={y} value={y}>{y}</option>
@@ -363,304 +265,94 @@ export default function Reports() {
         </div>
       </div>
 
-      {reportType !== 'sectors' && loading ? (
+      {sectorReportLoading ? (
         <PageLoader />
-      ) : reportType !== 'sectors' ? (
-        <>
-          {reportType === 'monthly' && monthlyData && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="card">
-                  <h3 className="text-lg font-semibold mb-4">{t('common.revenue_by_type')}</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlyData.byType}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="_id" tickFormatter={(v) => t(v)} />
-                      <YAxis />
-                      <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-                      <Legend formatter={(v) => t(v)} />
-                      <Bar dataKey="totalRevenue" fill="#0ea5e9" name={t('common.total_revenue')} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="card">
-                  <h3 className="text-lg font-semibold mb-4">{t('common.revenue_by_category')}</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlyData.byCategory}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="_id" tick={{ fontSize: 11 }} tickFormatter={(v) => t(v)} />
-                      <YAxis />
-                      <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-                      <Legend formatter={(v) => t(v)} />
-                      <Bar dataKey="totalRevenue" fill="#22c55e" name={t('common.total_revenue')} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {reportType === 'yearly' && yearlyData && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { label: t('common.yearly_revenue'), value: `ETB ${yearlyData.totalRevenue?.toLocaleString() || 0}`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                  { label: t('common.total_payments'), value: yearlyData.totalPayments || 0, icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' }
-                ].map((s, idx) => (
-                  <div key={idx} className="card flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-                    <div>
-                      <p className="text-2xl font-bold">{s.value}</p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="card">
-                <h3 className="text-lg font-semibold mb-4">{t('common.monthly_breakdown')}</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={yearlyData.monthlyBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="_id" tickFormatter={(m) => t(`common.eth_month_${m}`)} />
-                    <YAxis />
-                    <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-                    <Legend formatter={(v) => t(v)} />
-                    <Bar dataKey="monthlyRevenue" fill="#0ea5e9" name={t('common.total_revenue')} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {reportType === 'quarterly' && quarterlyData && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { label: t('common.quarterly_revenue'), value: `ETB ${quarterlyData.totalRevenue?.toLocaleString() || 0}`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                  { label: t('common.total_payments'), value: quarterlyData.totalPayments || 0, icon: Banknote, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' }
-                ].map((s, idx) => (
-                  <div key={idx} className="card flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-                    <div>
-                      <p className="text-2xl font-bold">{s.value}</p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="card">
-                <h3 className="text-lg font-semibold mb-4">{t('common.quarterly_breakdown')}</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={quarterlyData.quarterlyBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="_id" />
-                    <YAxis />
-                    <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-                    <Legend formatter={(v) => t(v)} />
-                    <Bar dataKey="totalRevenue" fill="#f59e0b" name={t('common.total_revenue')} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {reportType === 'hq-branch' && hqBranch && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { label: `${t('common.hq_share')} (${hqBranch.hqShare.percentage}%)`, value: `ETB ${hqBranch.hqShare.amount?.toLocaleString() || 0}`, icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                  { label: `${t('common.branch_share')} (${hqBranch.branchShare.percentage}%)`, value: `ETB ${hqBranch.branchShare.amount?.toLocaleString() || 0}`, icon: Users, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' }
-                ].map((s, idx) => (
-                  <div key={idx} className="card flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-                    <div>
-                      <p className="text-2xl font-bold">{s.value}</p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="card">
-                <h3 className="text-lg font-semibold mb-4">{t('common.distribution_chart')}</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: `${t('common.hq_share')} (20%)`, value: hqBranch.hqShare.amount },
-                        { name: `${t('common.branch_share')} (80%)`, value: hqBranch.branchShare.amount }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      label
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      <Cell fill="#0ea5e9" />
-                      <Cell fill="#22c55e" />
-                    </Pie>
-                    <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {reportType === 'defaulters' && defaulters && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { label: t('common.total_defaulters'), value: defaulters.totalDefaulters || 0, icon: Users, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
-                  { label: t('common.total_outstanding'), value: `ETB ${defaulters.totalOutstanding?.toLocaleString() || 0}`, icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' }
-                ].map((s, idx) => (
-                  <div key={idx} className="card flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-                    <div>
-                      <p className="text-2xl font-bold">{s.value}</p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="table-container">
-                <table className="table">
-                  <thead className="table-header">
-                    <tr>
-                      <th>{t('common.member_id')}</th>
-                      <th>{t('common.full_name')}</th>
-                      <th>{t('common.sector_unit')}</th>
-                      <th>{t('common.membership_type')}</th>
-                      <th>{t('common.monthly_fee')}</th>
-                      <th>{t('common.status')}</th>
+      ) : sectorReportData ? (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden print:overflow-visible">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">SECTOR NAME</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">TOTAL MEMBERS</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">PAID MEMBERS</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">UNPAID MEMBERS</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">TOTAL REVENUE</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">PAYMENT %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedSectors.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-slate-500">No data available</td>
+                  </tr>
+                ) : (
+                  paginatedSectors.map((sector: any) => (
+                    <tr key={sector.sectorId} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                      <td className="py-4 px-5 text-sm font-semibold text-slate-700 dark:text-slate-200">{sector.sectorName}</td>
+                      <td className="py-4 px-5 text-sm text-slate-600 dark:text-slate-400">{sector.totalMembers}</td>
+                      <td className="py-4 px-5">
+                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-xs font-bold min-w-[2.5rem]">
+                          {sector.paidMembers}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5">
+                        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-xs font-bold min-w-[2.5rem]">
+                          {sector.unpaidMembers}
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                        ETB {sector.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shrink-0">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                sector.paymentPercentage >= 80 ? 'bg-emerald-500'
+                                : sector.paymentPercentage >= 50 ? 'bg-[#dfab3b]'
+                                : 'bg-rose-500'
+                              }`}
+                              style={{ width: `${sector.paymentPercentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-8">{sector.paymentPercentage}%</span>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="table-body">
-                    {defaulters.defaulters?.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-gray-500">{t('common.no_defaulters_found')} ✅</td></tr>
-                    ) : (
-                      defaulters.defaulters?.map((member: any) => (
-                        <tr key={member._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td>{member.memberId}</td>
-                          <td>{member.fullName}</td>
-                          <td>{member.branch}</td>
-                          <td>{t(member.membershipType)}</td>
-                          <td className="font-semibold">ETB {(member.contributionMonthlyFee || member.contribution?.monthlyFee || 0).toLocaleString()}</td>
-                          <td><span className="badge badge-danger">{t(member.paymentStatus)}</span></td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-700 print:hidden">
+              <p className="text-[11px] text-slate-500 font-medium">
+                Showing {Math.min(filteredSectors.length, 1 + (currentPage - 1) * ITEMS_PER_PAGE)} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredSectors.length)} of {filteredSectors.length} entries
+              </p>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 flex items-center justify-center rounded text-[11px] font-bold transition-all ${
+                      currentPage === page
+                        ? 'bg-primary text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
               </div>
             </div>
           )}
-        </>
-      ) : null}
-
-      {reportType === 'sectors' && (
-        <>
-          {sectorReportLoading ? (
-            <PageLoader />
-          ) : sectorReportData ? (
-            <div className="space-y-4">
-              <div className="card print:hidden">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t('common.search_sector')}
-                    className="input pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="table-container print:overflow-visible">
-                <table className="table">
-                  <thead className="table-header">
-                    <tr>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.sector_name')}</th>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.total_members')}</th>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.paid_members')}</th>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.unpaid_members')}</th>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.total_revenue')}</th>
-                      <th className="sticky top-0 bg-slate-50 dark:bg-slate-800/50 z-10">{t('common.payment_percentage')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="table-body">
-                    {paginatedSectors.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-8 text-gray-500">{t('common.no_data')}</td>
-                      </tr>
-                    ) : (
-                      paginatedSectors.map((sector: any) => (
-                        <tr key={sector.sectorId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                          <td className="font-medium">{sector.sectorName}</td>
-                          <td>{sector.totalMembers}</td>
-                          <td><span className="badge badge-success">{sector.paidMembers}</span></td>
-                          <td><span className="badge badge-danger">{sector.unpaidMembers}</span></td>
-                          <td className="font-semibold">ETB {sector.totalRevenue.toLocaleString()}</td>
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${
-                                    sector.paymentPercentage >= 80 ? 'bg-emerald-500'
-                                    : sector.paymentPercentage >= 50 ? 'bg-amber-500'
-                                    : 'bg-rose-500'
-                                  }`}
-                                  style={{ width: `${sector.paymentPercentage}%` }}
-                                />
-                              </div>
-                              <span className="text-[11px] font-bold">{sector.paymentPercentage}%</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between print:hidden">
-                  <p className="text-[11px] text-gray-500">
-                    {t('common.showing_records', {
-                      start: Math.min(filteredSectors.length, 1 + (currentPage - 1) * ITEMS_PER_PAGE),
-                      end: Math.min(currentPage * ITEMS_PER_PAGE, filteredSectors.length),
-                      total: filteredSectors.length
-                    })}
-                  </p>
-                  <div className="flex gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 rounded text-[11px] font-bold transition-all ${
-                          currentPage === page
-                            ? 'bg-primary text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="card text-center py-12">
-              <p className="text-gray-500">{t('common.no_report_data')}</p>
-            </div>
-          )}
-        </>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-center py-12">
+          <p className="text-slate-500">No report data found</p>
+        </div>
       )}
     </motion.div>
   )

@@ -355,7 +355,7 @@ export default function Payments() {
         'Year':          selectedYearNum,
         'Due Fee (Birr)':m.fee,
         'Payment Status':m.paymentStatus,
-        'Payment Date':  m.paymentDate ? new Date(m.paymentDate).toLocaleDateString() : '-'
+        'Payment Date':  m.paymentDate ? formatEthiopianDate(m.paymentDate) : '-'
       }))
       const XLSX = await import('xlsx')
       const ws = XLSX.utils.json_to_sheet(rows)
@@ -393,7 +393,7 @@ export default function Payments() {
         'Method':        p.method,
         'Period Month':  p.period?.month,
         'Period Year':   p.period?.year,
-        'Payment Date':  p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '-',
+        'Payment Date':  p.paymentDate ? formatEthiopianDate(p.paymentDate) : '-',
         'Status':        p.status,
         'Received By':   p.receivedBy
       }))
@@ -446,7 +446,7 @@ export default function Payments() {
         paymentDate: new Date().toISOString(),
         periodMonth: Number(month),
         periodYear: Number(year),
-        receivedBy: 'System Admin', 
+        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin', 
         status: 'Paid'
       })
       await fetchMonthlyStatus()
@@ -479,7 +479,7 @@ export default function Payments() {
         paymentDate: new Date().toISOString(),
         periodMonth: Number(selectedMonthNum),
         periodYear: Number(selectedYearNum),
-        receivedBy: 'Bulk Collection',
+        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin',
         status: 'Paid'
       }))
       await api.post('/payments/bulk', payload)
@@ -531,7 +531,7 @@ export default function Payments() {
         paymentDate: new Date().toISOString(),
         periodMonth: Number(selectedMonthNum),
         periodYear: Number(selectedYearNum),
-        receivedBy: 'Bulk Collection',
+        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin',
         status: 'Paid'
       }))
       await api.post('/payments/bulk', payload)
@@ -588,29 +588,7 @@ export default function Payments() {
       <td>{payment.currency}</td>
       <td>{getMethodBadge(payment.method)}</td>
       <td>{payment.paymentDate ? formatEthiopianDate(payment.paymentDate) : '-'}</td>
-      <td>{t(`common.eth_month_${payment.period.month}`)} / {payment.period.year}</td>
-      <td>{payment.receiptId}</td>
-      <td>
-        <div className="flex gap-[2px] items-center">
-          {Array.from({ length: 13 }, (_, idx) => {
-            const m = idx + 1
-            const isPaid = payment.period?.month === m && payment.period?.year === selectedYearNum
-            return (
-              <div
-                key={m}
-                title={t('common.eth_month_' + m) + ' ' + selectedYearNum + ': ' + (isPaid ? 'Paid' : 'No payment')}
-                className={`w-4 h-4 rounded-sm flex items-center justify-center text-[7px] font-bold transition-all cursor-help
-                  ${ isPaid
-                    ? 'bg-green-500 text-white shadow-sm shadow-green-300'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                  }`}
-              >
-                {m}
-              </div>
-            )
-          })}
-        </div>
-      </td>
+      <td>{payment.receivedBy === 'System Admin' || payment.receivedBy === 'Bulk Collection' ? 'Admin' : payment.receivedBy || 'Admin'}</td>
       <td>
         <div className="flex items-center gap-2">
           {getStatusBadge(payment.status)}
@@ -939,21 +917,23 @@ export default function Payments() {
       ) : (
       <div className="space-y-4">
       {/* Metrics Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-        {[
-          { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-          { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-          { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
-        ].map(s => (
-          <div key={s.label} className="card flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
-            <div>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+      {activeTab !== 'sector' && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+          {[
+            { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+            { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+            { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
+          ].map(s => (
+            <div key={s.label} className="card flex items-center gap-4">
+              <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+              <div>
+                <p className="text-2xl font-bold">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Monthly Collection - Member List */}
       {activeTab !== 'history' && activeTab !== 'sector' && (
@@ -1038,7 +1018,7 @@ export default function Payments() {
                         </span>
                       </td>
                       <td className="text-xs">
-                        {member.paymentDate ? new Date(member.paymentDate).toLocaleDateString() : '-'}
+                        {member.paymentDate ? formatEthiopianDate(member.paymentDate) : '-'}
                       </td>
                       <td className="text-center">
                         {member.paymentStatus === 'Unpaid' ? (
@@ -1165,9 +1145,7 @@ export default function Payments() {
                   <th>Currency</th>
                   <th>Method</th>
                   <th>Date</th>
-                  <th>Period</th>
                   <th>Received By</th>
-                  <th>Schedule ({selectedYearNum})</th>
                   <th>Status</th>
                 </tr>
               </thead>
