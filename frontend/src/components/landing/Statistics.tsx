@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Users, CreditCard, Wallet, Activity, Building2 } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface StatisticsProps {
   stats: {
@@ -40,35 +41,37 @@ function Counter({ end, duration = 2000, suffix = '' }: { end: number; duration?
 }
 
 export default function Statistics({ stats, content }: StatisticsProps) {
+  const { t } = useTranslation();
+
   const statItems = [
     {
       icon: Users,
       value: stats.totalMembers,
-      label: 'Active Registered Members',
+      label: t('landing.stat_members'),
       suffix: ''
     },
     {
       icon: CreditCard,
       value: stats.totalPayments,
-      label: 'Approved Payments',
+      label: t('landing.stat_payments'),
       suffix: ''
     },
     {
       icon: Wallet,
       value: stats.totalRevenue,
-      label: 'Total Contributions',
+      label: t('landing.stat_revenue'),
       suffix: ' ETB'
     },
     {
       icon: Building2,
       value: stats.totalSectors,
-      label: 'Active Sectors',
+      label: t('landing.stat_sectors'),
       suffix: ''
     },
     {
       icon: Activity,
       value: stats.collectionRate,
-      label: 'Collection Rate',
+      label: t('landing.stat_collection'),
       suffix: '%'
     }
   ];
@@ -81,15 +84,15 @@ export default function Statistics({ stats, content }: StatisticsProps) {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#D4AF37]/50"></span>
-            {content.stats_title || 'Institutional Audit'}
+            {content.stats_title || t('landing.stats_title')}
             <span className="w-6 h-px bg-[#D4AF37]/50"></span>
           </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
-            System Live Statistics
-          </h2>
-          <p className="text-sm text-gray-400 mt-4 max-w-lg mx-auto">
-            Real-time financial aggregates and membership metrics audited from official records.
-          </p>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+              {t('landing.stats_title')}
+            </h2>
+            <p className="text-sm text-gray-400 mt-4 max-w-lg mx-auto">
+              {t('landing.stats_subtitle')}
+            </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">

@@ -1,37 +1,40 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Key, Eye, Database, FileSpreadsheet, Lock, Activity, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Security() {
+  const { t } = useTranslation();
+
   const securityItems = [
     {
       icon: Lock,
-      title: 'AES-256 Encryption',
-      desc: 'All membership records and contribution files are encrypted in transit and at rest.'
+      title: t('landing.trust_security'),
+      desc: t('landing.trust_security_desc')
     },
     {
       icon: Key,
-      title: 'Role-Based Access Control',
-      desc: 'Strict authorization limits system commands to verified branch officers.'
+      title: t('landing.value_accountability'),
+      desc: t('landing.value_accountability_desc')
     },
     {
       icon: Activity,
-      title: 'Audit Logging',
-      desc: 'Every database transaction, login, and export is recorded chronologically.'
+      title: t('landing.trust_audit'),
+      desc: t('landing.trust_audit_desc')
     },
     {
       icon: Database,
-      title: 'Secure Backups',
-      desc: 'Automated backups prevent data loss and preserve financial archives.'
+      title: t('landing.trust_control'),
+      desc: t('landing.trust_control_desc')
     },
     {
       icon: Eye,
-      title: 'Financial Transparency',
-      desc: 'Double-entry validation maps contribution receipts to bank deposits.'
+      title: t('landing.value_transparency'),
+      desc: t('landing.value_transparency_desc')
     },
     {
       icon: CheckCircle2,
-      title: 'Data Integrity',
-      desc: 'Database constraint normalization rules prevent duplicate records.'
+      title: t('landing.trust_integrity'),
+      desc: t('landing.trust_integrity_desc')
     }
   ];
 
@@ -44,15 +47,14 @@ export default function Security() {
         <div className="text-center mb-20">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#D4AF37]/50"></span>
-            Compliance & Defense
-            <span className="w-6 h-px bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
-            Security & Transparency
-          </h2>
-          <p className="text-sm text-gray-400 mt-4 max-w-lg mx-auto">
-            Government-grade protection protocols ensuring trust, accountability, and database reliability.
-          </p>
+            {t('nav.security')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+              {t('nav.security')}
+            </h2>
+            <p className="text-sm text-gray-400 mt-4 max-w-lg mx-auto">
+              {t('landing.trust_desc')}
+            </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -1,10 +1,12 @@
 import { Globe, MapPin, Phone, Mail, Clock, Layers, ShieldCheck, CheckCircle2, ChevronRight, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface FooterProps {
   content: Record<string, string>;
 }
 
 export default function Footer({ content }: FooterProps) {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -19,8 +21,8 @@ export default function Footer({ content }: FooterProps) {
             <div className="flex items-center gap-3">
               <img src="/pp-logo.png" alt="Prosperity Party" className="w-12 h-12 object-contain bg-white rounded-full p-1.5 shadow-lg" />
               <div>
-                <div className="text-white font-black text-sm font-outfit leading-tight">Prosperity Party</div>
-                <div className="text-[#D4AF37] text-[9px] font-black uppercase tracking-[0.25em]">Dire Dawa Branch</div>
+                <div className="text-white font-black text-sm font-outfit leading-tight">{t('common.prosperity_party')}</div>
+                <div className="text-[#D4AF37] text-[9px] font-black uppercase tracking-[0.25em]">{t('hero.branch')}</div>
               </div>
             </div>
             
@@ -45,14 +47,14 @@ export default function Footer({ content }: FooterProps) {
 
           {/* Column 2: Quick Links */}
           <div>
-            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">Quick Navigation</h4>
+            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">{t('landing.footer_quick_nav')}</h4>
             <ul className="space-y-4 text-xs">
               {[
-                { name: 'Home', href: '#hero' },
-                { name: 'About', href: '#about' },
-                { name: 'Features', href: '#features' },
-                { name: 'Photo Gallery', href: '#gallery' },
-                { name: 'Contact', href: '#contact' }
+                { name: t('nav.home'), href: '#hero' },
+                { name: t('nav.about'), href: '#about' },
+                { name: t('nav.features'), href: '#features' },
+                { name: t('landing.photo_gallery'), href: '#gallery' },
+                { name: t('nav.contact'), href: '#contact' }
               ].map(link => (
                 <li key={link.name}>
                   <a href={link.href}
@@ -67,7 +69,7 @@ export default function Footer({ content }: FooterProps) {
 
           {/* Column 3: Contact Information */}
           <div>
-            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">Contact Information</h4>
+            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">{t('landing.footer_contact')}</h4>
             <ul className="space-y-5 text-xs text-gray-400">
               <li className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#0B5D3B]/10 flex items-center justify-center flex-shrink-0">
@@ -75,7 +77,7 @@ export default function Footer({ content }: FooterProps) {
                 </div>
                 <div>
                   <p className="text-white font-bold">{content.phone || '+251 25 111 0000'}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Monday – Friday, 8:30 AM – 5:30 PM</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{t('landing.footer_hours')}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -84,7 +86,7 @@ export default function Footer({ content }: FooterProps) {
                 </div>
                 <div>
                   <p className="text-white font-bold">{content.email || 'info@pp-diredawa.org'}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Official Inquiries & Support</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{t('landing.footer_inquiries')}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -92,8 +94,8 @@ export default function Footer({ content }: FooterProps) {
                   <Clock className="w-4 h-4 text-[#D4AF37]" />
                 </div>
                 <div>
-                  <p className="text-white font-bold">Saturday Hours</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">8:30 AM – 12:30 PM</p>
+                  <p className="text-white font-bold">{t('landing.footer_saturday')}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{t('landing.footer_saturday_hours')}</p>
                 </div>
               </li>
             </ul>
@@ -101,14 +103,14 @@ export default function Footer({ content }: FooterProps) {
 
           {/* Column 4: Office Address */}
           <div>
-            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">Office Address</h4>
+            <h4 className="text-white font-black text-xs uppercase tracking-[0.25em] mb-8 font-outfit">{t('landing.footer_address')}</h4>
             <ul className="space-y-5 text-xs text-gray-400">
               <li className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-[#0B5D3B]/10 flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-4 h-4 text-[#D4AF37]" />
                 </div>
                 <div>
-                  <p className="text-white font-bold">{content.address || 'Dire Dawa Headquarters'}</p>
+                  <p className="text-white font-bold">{content.address || t('hero.branch')}</p>
                   <p className="text-[10px] text-gray-500 mt-0.5">Branch Headquarters, Dire Dawa, Ethiopia</p>
                 </div>
               </li>
@@ -119,12 +121,12 @@ export default function Footer({ content }: FooterProps) {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-            &copy; {currentYear} Prosperity Party Dire Dawa Branch Office. Built for Digital Governance.
+            &copy; {currentYear} {t('landing.footer_copyright')}
           </p>
           <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-wider">
-            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">Privacy Policy</a>
-            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">Terms of Service</a>
-            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">Accessibility</a>
+            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">{t('landing.footer_privacy')}</a>
+            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">{t('landing.footer_terms')}</a>
+            <a href="#" className="text-gray-500 hover:text-[#D4AF37] transition-colors duration-300">{t('landing.footer_accessibility')}</a>
           </div>
         </div>
       </div>

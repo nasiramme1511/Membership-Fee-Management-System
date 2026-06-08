@@ -265,7 +265,7 @@ export default function Profile() {
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
-                placeholder="New password (min 6 chars)"
+                placeholder={t('common.new_password')}
               />
             </div>
             <div>

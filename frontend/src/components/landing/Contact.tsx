@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ContactProps {
   content: Record<string, string>;
 }
 
 export default function Contact({ content }: ContactProps) {
+  const { t } = useTranslation();
   // Default fallback embed map of Dire Dawa
   const defaultMapUrl = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3936.787687823528!2d41.85966677579124!3d9.59218559049363!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x163101c5f3e498c1%3A0xe54d72856f6ba3a8!2sDire%20Dawa!5e0!3m2!1sen!2set!4v1717800000000!5m2!1sen!2set";
   
@@ -14,27 +16,27 @@ export default function Contact({ content }: ContactProps) {
   const infoItems = [
     {
       icon: MapPin,
-      title: 'Office Address',
-      line1: content.address || 'Dire Dawa Headquarters',
-      line2: 'Branch Office Headquarters, Dire Dawa, Ethiopia'
+      title: t('landing.footer_address'),
+      line1: content.address || t('hero.branch'),
+      line2: t('landing.about_subtitle')
     },
     {
       icon: Phone,
-      title: 'Phone Contacts',
+      title: t('landing.footer_contact'),
       line1: content.phone || '+251 25 111 0000',
-      line2: 'Office Secretariat & Administrative Registry'
+      line2: t('landing.footer_inquiries')
     },
     {
       icon: Mail,
-      title: 'Support Email',
+      title: t('common.email'),
       line1: content.email || 'info@pp-diredawa.org',
-      line2: 'Official branch inquiry inbox'
+      line2: t('landing.footer_inquiries')
     },
     {
       icon: Clock,
-      title: 'Office Hours',
-      line1: 'Monday – Friday: 8:30 AM – 5:30 PM',
-      line2: 'Saturday: 8:30 AM – 12:30 PM (Closed Sundays)'
+      title: t('landing.footer_hours'),
+      line1: t('landing.footer_hours'),
+      line2: t('landing.footer_saturday_hours')
     }
   ];
 
@@ -45,15 +47,14 @@ export default function Contact({ content }: ContactProps) {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            Reach Out
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-            Contact Branch Office
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto leading-relaxed">
-            Get in touch with administrative officers and registry desks at the Dire Dawa branch headquarters.
-          </p>
+            {t('nav.contact')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
+              {t('nav.contact')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto leading-relaxed">
+              {t('landing.footer_desc')}
+            </p>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">

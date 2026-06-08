@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogIn, Award } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 interface NavbarProps {
   scrolled: boolean;
@@ -10,6 +12,7 @@ interface NavbarProps {
 
 export default function Navbar({ scrolled, navLinks }: NavbarProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -22,23 +25,22 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
             <div className={`w-11 h-11 rounded-full overflow-hidden border-2 transition-all duration-500 flex-shrink-0 ${
               scrolled ? 'border-[#0B5D3B] shadow-sm' : 'border-white/80'
             }`}>
-              <img src="/pp-logo.png" alt="Prosperity Party" className="w-full h-full object-contain bg-white" />
+              <img src="/pp-logo.png" alt={t('nav.home')} className="w-full h-full object-contain bg-white" />
             </div>
             <div className="flex flex-col">
               <div className={`font-black text-sm leading-tight tracking-tight font-outfit transition-colors duration-500 ${
                 scrolled ? 'text-gray-900 dark:text-white' : 'text-white'
               }`}>
-                Prosperity Party
+                {t('common.prosperity_party')}
               </div>
               <div className={`text-[9px] font-bold uppercase tracking-[0.25em] transition-colors duration-500 ${
                 scrolled ? 'text-[#D4AF37]' : 'text-white/80'
               }`}>
-                Dire Dawa Branch
+                {t('hero.branch')}
               </div>
             </div>
           </a>
 
-          {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map(link => (
               <a key={link.name} href={link.href}
@@ -56,6 +58,7 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <button onClick={() => navigate('/login')}
               className={`px-5 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center ${
                 scrolled
@@ -63,7 +66,7 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
                   : 'text-white border border-white/40 hover:border-white hover:bg-white/10'
               }`}>
               <LogIn className="w-3.5 h-3.5 inline mr-1.5" />
-              Login
+              {t('nav.login')}
             </button>
             <button onClick={() => navigate('/login')}
               className={`px-5 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 shadow-lg ${
@@ -71,7 +74,7 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
                   ? 'bg-[#0B5D3B] text-white hover:bg-[#094a2f] shadow-[#0B5D3B]/20'
                   : 'bg-[#D4AF37] text-gray-900 hover:bg-[#c39e2e] shadow-[#D4AF37]/30'
               }`}>
-              Register
+              {t('nav.register')}
             </button>
             <button onClick={() => setMobileMenuOpen(true)}
               className={`lg:hidden p-2 rounded-lg transition-colors ${
@@ -83,7 +86,6 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -119,11 +121,11 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
             >
               <button onClick={() => navigate('/login')}
                 className="px-6 py-3 border border-white/30 text-white font-bold uppercase tracking-wider rounded-lg text-xs hover:bg-white hover:text-gray-900 transition-all">
-                Login
+                {t('nav.login')}
               </button>
               <button onClick={() => navigate('/login')}
                 className="px-6 py-3 bg-[#D4AF37] text-gray-900 font-bold uppercase tracking-wider rounded-lg text-xs hover:bg-[#c39e2e] transition-all">
-                Register
+                {t('nav.register')}
               </button>
             </motion.div>
           </motion.div>

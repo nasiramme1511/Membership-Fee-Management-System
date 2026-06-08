@@ -1,50 +1,52 @@
 import { motion } from 'framer-motion';
 import { Users, CreditCard, Building2, BarChart3, Bot, Settings, FileSpreadsheet, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function Features() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const featureItems = [
     {
       icon: Users,
-      title: 'Member Management',
-      desc: 'Digital registration, classification, and monthly contribution tracking for active party members.'
+      title: t('landing.feat_member_title'),
+      desc: t('landing.feat_member_desc')
     },
     {
       icon: CreditCard,
-      title: 'Payment Management',
-      desc: 'Record contribution payments, audit transaction receipts, and verify bank transfers.'
+      title: t('landing.feat_payment_title'),
+      desc: t('landing.feat_payment_desc')
     },
     {
       icon: BarChart3,
-      title: 'Reports & Analytics',
-      desc: 'Real-time statistical calculators, payment summaries, and collection rate analytics.'
+      title: t('landing.feat_report_title'),
+      desc: t('landing.feat_report_desc')
     },
     {
       icon: Building2,
-      title: 'Sector Administration',
-      desc: 'Hierarchical mapping and reporting of wings, clusters, and geographic sub-sectors.'
+      title: t('landing.feat_sector_title'),
+      desc: t('landing.feat_sector_desc')
     },
     {
       icon: Settings,
-      title: 'User Management',
-      desc: 'Granular role-based access controls for admins, sector experts, and branch officers.'
+      title: t('landing.feat_user_title'),
+      desc: t('landing.feat_user_desc')
     },
     {
       icon: FileSpreadsheet,
-      title: 'Export Center',
-      desc: 'Instant generation of official report logs and data tables in PDF, Excel, and CSV formats.'
+      title: t('landing.feat_export_title'),
+      desc: t('landing.feat_export_desc')
     },
     {
       icon: ShieldCheck,
-      title: 'Audit Logs',
-      desc: 'Chronological tracking of system activities, database records, and export operations.'
+      title: t('landing.feat_audit_title'),
+      desc: t('landing.feat_audit_desc')
     },
     {
       icon: Bot,
-      title: 'AI Assistance',
-      desc: 'Natural language analysis tools to parse contribution sheets and summarize stats.'
+      title: t('landing.feat_ai_title'),
+      desc: t('landing.feat_ai_desc')
     }
   ];
 
@@ -56,15 +58,14 @@ export default function Features() {
         <div className="text-center mb-20">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            System Capabilities
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-            Enterprise Features
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
-            A secure digital framework built to handle institutional operations, workflows, and detailed audits.
-          </p>
+            {t('landing.features_subtitle')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
+              {t('landing.features_title')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
+              {t('landing.features_desc')}
+            </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -88,7 +89,7 @@ export default function Features() {
                 {feat.desc}
               </p>
               <div onClick={() => navigate('/login')} className="mt-6 flex items-center gap-2 text-[#0B5D3B] dark:text-[#D4AF37] text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 cursor-pointer">
-                Access Feature <ArrowRight className="w-3.5 h-3.5" />
+                {t('buttons.access_feature')} <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </motion.div>
           ))}

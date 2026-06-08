@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronDown, Award, Users, Building2, Wallet, TrendingUp, ShieldAlert } from 'lucide-react';
+import { ChevronDown, Award, Users, Building2, Wallet, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface HeroProps {
   stats: {
@@ -16,6 +17,7 @@ interface HeroProps {
 
 export default function Hero({ stats, content, heroBg }: HeroProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(amount);
@@ -26,7 +28,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
       <div className="absolute inset-0">
         <img
           src={heroBg || '/photos/building.jpg'}
-          alt="Prosperity Party Dire Dawa Branch Office Main Building"
+          alt={t('hero.subtitle')}
           className="w-full h-full object-cover scale-100"
           onError={(e) => { (e.target as HTMLImageElement).src = '/photos/building.jpg'; }}
         />
@@ -45,38 +47,38 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
           >
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/25 text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.25em]">
               <Award className="w-3.5 h-3.5" />
-              Official Branch Portal
+              {t('hero.badge')}
             </div>
             
             <div className="space-y-2">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight font-outfit">
-                {content.hero_title || 'PROSPERITY PARTY'}
+                {content.hero_title || t('hero.subtitle')}
               </h1>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#D4AF37] tracking-tight font-outfit uppercase">
-                {content.hero_subtitle || 'DIRE DAWA BRANCH OFFICE'}
+                {content.hero_subtitle || t('hero.branch')}
               </h2>
             </div>
             
             <h3 className="text-lg sm:text-xl font-bold text-white/90">
-              Membership Fee Management System
+              {t('hero.title')}
             </h3>
             
             <p className="text-sm sm:text-base text-gray-300 leading-relaxed max-w-xl">
-              {content.hero_description || 'A secure digital platform for membership administration, contribution management, and organizational transparency.'}
+              {content.hero_description || t('hero.description')}
             </p>
             
             <div className="flex flex-wrap gap-4 pt-4">
               <button onClick={() => navigate('/login')}
                 className="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-[#D4AF37] text-slate-950 font-black rounded-xl hover:bg-[#c39e2e] transition-all duration-300 shadow-2xl shadow-[#D4AF37]/20 text-xs uppercase tracking-wider">
-                Login
+                {t('hero.cta_login')}
               </button>
               <button onClick={() => navigate('/login')}
                 className="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-[#0B5D3B] text-white font-black rounded-xl hover:bg-[#094a2f] border border-[#0B5D3B] transition-all duration-300 shadow-2xl shadow-[#0B5D3B]/20 text-xs uppercase tracking-wider">
-                Register
+                {t('hero.cta_register')}
               </button>
               <a href="#about"
                 className="inline-flex items-center justify-center gap-3 px-6 py-3.5 border border-white/20 text-white font-bold rounded-xl hover:border-white/50 hover:bg-white/10 transition-all duration-300 text-xs uppercase tracking-wider">
-                Learn More
+                {t('hero.cta_learn')}
                 <ChevronDown className="w-4 h-4" />
               </a>
             </div>
@@ -90,13 +92,13 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
           >
             <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
               <h4 className="text-white/80 font-black text-[11px] uppercase tracking-[0.2em] mb-6 border-b border-white/10 pb-4">
-                Live Statistical Insights
+                {t('landing.stats_title')}
               </h4>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-[#D4AF37]">
                     <Users className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Members</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('hero.stat_members')}</span>
                   </div>
                   <div className="text-2xl font-black text-white font-outfit">
                     {stats.totalMembers.toLocaleString()}
@@ -106,7 +108,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-[#D4AF37]">
                     <Building2 className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Active Sectors</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('hero.stat_sectors')}</span>
                   </div>
                   <div className="text-2xl font-black text-white font-outfit">
                     {stats.totalSectors.toLocaleString()}
@@ -116,7 +118,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-[#D4AF37]">
                     <Wallet className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Total Revenue</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('hero.stat_revenue')}</span>
                   </div>
                   <div className="text-2xl font-black text-white font-outfit">
                     {formatCurrency(stats.totalRevenue)} <span className="text-xs text-gray-400 font-bold">ETB</span>
@@ -126,7 +128,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-[#D4AF37]">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Collection Rate</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('hero.stat_collection')}</span>
                   </div>
                   <div className="text-2xl font-black text-[#10B981] font-outfit">
                     {stats.collectionRate}%
@@ -139,7 +141,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span>Live connection with MySQL cluster database active.</span>
+                <span>{t('hero.database_status')}</span>
               </div>
             </div>
           </motion.div>
@@ -148,7 +150,7 @@ export default function Hero({ stats, content, heroBg }: HeroProps) {
 
       <a href="#about"
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors duration-300">
-        <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Scroll Down</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.3em]">{t('hero.scroll_down')}</span>
         <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <ChevronDown className="w-4 h-4" />
         </motion.div>

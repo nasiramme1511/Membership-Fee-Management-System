@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { getEthiopianYear } from '../utils/ethiopianCalendar'
 import { motion } from 'framer-motion'
 import { 
-  ArrowRight, ShieldCheck, AlertCircle, Languages,
+  ArrowRight, ShieldCheck, AlertCircle,
   TrendingUp, Lock, Mail, Activity, Clock
 } from 'lucide-react'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 const Preloader = () => {
   const { t } = useTranslation()
@@ -162,17 +163,9 @@ export default function Login() {
       {/* Right Side: Elegant Glass Form */}
       <div className="w-full lg:w-[45%] flex flex-col items-center justify-center p-6 relative z-10">
         
-        {/* Language Toggler at top right */}
+        {/* Language Switcher at top right */}
         <div className="absolute top-8 right-8">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => i18n.changeLanguage(currentLang.startsWith('en') ? 'am' : 'en')}
-            className="px-4 py-2 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-black text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-white hover:border-primary/50 dark:hover:border-white/20 transition-all flex items-center gap-2 uppercase tracking-widest backdrop-blur-md shadow-sm"
-          >
-            <Languages className="w-3 h-3" />
-            {currentLang.startsWith('am') ? 'English' : 'አማርኛ'}
-          </motion.button>
+          <LanguageSwitcher />
         </div>
 
         <motion.div 

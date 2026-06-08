@@ -94,7 +94,7 @@ export default function SettingsPage() {
   }
 
   if (loading) return <PageLoader />
-  if (!settings) return <div className="text-center text-red-500">Failed to load settings</div>
+  if (!settings) return <div className="text-center text-red-500">{t('dashboard.dashboard_fail')}</div>
 
   const tabs = [
     { id: 'contribution', label: t('common.contribution_rules'), icon: DollarSign },
@@ -112,7 +112,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('common.settings')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">Configure system-wide settings and rules</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.settings')}</p>
         </div>
         <button onClick={handleSave} disabled={saving} className="btn btn-primary flex items-center gap-2">
           <Save className="w-4 h-4" />
@@ -267,14 +267,14 @@ export default function SettingsPage() {
 
             {/* Salary-Based - Government */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Government (Employees)</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('common.salary_calculation_settings')}</h3>
               <div className="overflow-x-auto">
                 <table className="table">
                   <thead className="table-header">
                     <tr>
-                      <th>Min Net Salary</th>
-                      <th>Max Net Salary</th>
-                      <th>Percentage (%)</th>
+                      <th>{t('common.min_salary')}</th>
+                      <th>{t('common.max_salary')}</th>
+                      <th>{t('common.percentage')}</th>
                     </tr>
                   </thead>
 
@@ -437,11 +437,11 @@ export default function SettingsPage() {
 
             {/* Wing Fees - Art. 7 & 8 */}
             <div>
-              <h3 className="text-lg font-semibold mb-1">Wing Fees (Articles 7 & 8)</h3>
-              <p className="text-xs text-gray-500 mb-4">Women's & Youth Wing monthly contribution rates</p>
+              <h3 className="text-lg font-semibold mb-1">{t('common.fixed_fees')}</h3>
+              <p className="text-xs text-gray-500 mb-4">{t('common.contribution_rules')}</p>
 
               <div className="mb-3">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Article 7b — Salary-Based Tiers (Monthly Birr)</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.salary_calculation_settings')}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { key: 'salary_1k_3k',   label: '1,000–3,000 Birr' },
@@ -469,7 +469,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Article 8 — Occupation-Based Tiers</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.business_fees')}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { key: 'farmer',         label: 'Art.8a Farmer/Pastoral (Birr/month)' },
@@ -607,7 +607,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div>
                   <p className="font-medium">{t('common.sms_notifications')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Send SMS reminders to defaulters</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.sms_notifications')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -622,7 +622,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div>
                   <p className="font-medium">{t('common.email_notifications')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Send email receipts automatically</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.email_notifications')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -644,7 +644,7 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-xl font-bold">{t('common.recalculate_all')}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Synchronize all member contribution fees with the latest settings.
+                {t('common.recalculate_warning_text')}
               </p>
             </div>
 
@@ -654,26 +654,10 @@ export default function SettingsPage() {
                   <RotateCcw className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recalculate Member Contributions</h3>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('common.recalculate_all')}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    This action will recompute the monthly fee, annual fee, and salary deductions for all members
-                    using the current contribution rules. Members already on custom fees will be updated to reflect
-                    the latest bracket configurations.
+                    {t('common.recalculate_warning_text')}
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-primary-500 inline-block"></span>
-                      Applies updated tax brackets
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-primary-500 inline-block"></span>
-                      Recalculates pension deductions
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-primary-500 inline-block"></span>
-                      Updates net salary & contribution fee
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -683,7 +667,7 @@ export default function SettingsPage() {
                 <RotateCcw className="w-4 h-4" />
                 {t('common.recalculate_all_members_now')}
               </button>
-              <p className="text-xs text-gray-400 dark:text-gray-500">This may take a few moments depending on the number of members.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t('common.recalculate_warning_text')}</p>
             </div>
           </div>
         )}
@@ -700,10 +684,10 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={confirmOpen}
         variant="info"
-        title="Recalculate Member Contributions"
-        message="This will recompute contribution fees for all members based on the current rules. The operation will apply updated tax brackets, pension deductions, and net salary calculations."
-        confirmLabel="Recalculate Now"
-        cancelLabel="Cancel"
+        title={t('common.recalculate_all')}
+        message={t('common.recalculate_warning_text')}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doRecalculate}
         onCancel={() => setConfirmOpen(false)}
       />

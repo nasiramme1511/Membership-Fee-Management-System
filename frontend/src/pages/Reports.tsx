@@ -132,17 +132,17 @@ export default function Reports() {
     >
       <div className="flex items-center justify-between print:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reports</h1>
-          <p className="text-slate-500">Financial and Audit Reports</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('report.title')}</h1>
+          <p className="text-slate-500">{t('report.financial_audit')}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={handleSectorExport} className="bg-[#dfab3b] hover:bg-[#c99a35] text-white px-4 py-2 rounded font-semibold flex items-center gap-2 text-sm shadow-sm transition-colors">
             <Download className="w-4 h-4" />
-            Export All Data (Excel)
+            {t('report.export_excel')}
           </button>
           <button onClick={handlePrint} className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded font-semibold flex items-center gap-2 text-sm transition-colors">
             <Printer className="w-4 h-4" />
-            Print
+            {t('buttons.print')}
           </button>
         </div>
       </div>
@@ -150,11 +150,11 @@ export default function Reports() {
       {sectorReportData && !sectorReportLoading && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: 'Total Members', value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
-            { label: 'Total Paid Members', value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-            { label: 'Total Unpaid Members', value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: UserMinus, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
-            { label: 'Total Revenue', value: `ETB ${sectorReportData.summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Wallet, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-            { label: 'Collection Rate', value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' }
+            { label: t('report.total_paid'), value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+            { label: t('report.total_paid'), value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+            { label: t('report.total_unpaid'), value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: UserMinus, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
+            { label: t('report.collected_revenue'), value: `ETB ${sectorReportData.summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Wallet, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+            { label: t('report.collection_rate'), value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' }
           ].map((s, idx) => (
             <div key={idx} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex items-center gap-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
@@ -177,13 +177,13 @@ export default function Reports() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="search_by_name_id_phone"
+              placeholder={t('common.search')}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
           <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
             <Filter className="w-4 h-4" />
-            Filter
+            {t('common.filter')}
           </button>
         </div>
 
@@ -194,7 +194,7 @@ export default function Reports() {
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
             disabled={user?.role === 'sector_officer'}
           >
-            <option value="">All Sector Types</option>
+            <option value="">{t('report.all_types')}</option>
             {sectorTypes.map(t_obj => (
               <option key={t_obj.id} value={t_obj.name}>{t_obj.name}</option>
             ))}
@@ -206,7 +206,7 @@ export default function Reports() {
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
             disabled={!selectedSectorType && user?.role !== 'sector_officer'}
           >
-            <option value="">All Units</option>
+            <option value="">{t('report.all_units')}</option>
             {sectors.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -217,7 +217,7 @@ export default function Reports() {
             onChange={(e) => setSelectedCategoryId(e.target.value)}
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
-            <option value="">All Categories</option>
+            <option value="">{t('report.all_categories')}</option>
             {categories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -228,9 +228,9 @@ export default function Reports() {
             onChange={(e) => setPeriodType(e.target.value)}
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
-            <option value="monthly">monthly</option>
-            <option value="quarterly">quarterly</option>
-            <option value="yearly">yearly</option>
+            <option value="monthly">{t('payment.monthly')}</option>
+            <option value="quarterly">{t('payment.quarterly')}</option>
+            <option value="yearly">{t('payment.annual')}</option>
           </select>
 
           <select
@@ -238,9 +238,9 @@ export default function Reports() {
             onChange={(e) => setPaymentStatus(e.target.value)}
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
-            <option value="">All Statuses</option>
-            <option value="paid">Paid</option>
-            <option value="unpaid">Unpaid</option>
+            <option value="">{t('payment.all_statuses')}</option>
+            <option value="paid">{t('common.paid')}</option>
+            <option value="unpaid">{t('common.unpaid')}</option>
           </select>
 
           <select
@@ -273,18 +273,18 @@ export default function Reports() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">SECTOR NAME</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">TOTAL MEMBERS</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">PAID MEMBERS</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">UNPAID MEMBERS</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">TOTAL REVENUE</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">PAYMENT %</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('sector.name')}</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('common.total_members')}</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.total_paid')}</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.total_unpaid')}</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.collected_revenue')}</th>
+                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.collection_rate')}</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedSectors.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-slate-500">No data available</td>
+                    <td colSpan={6} className="text-center py-8 text-slate-500">{t('common.no_data')}</td>
                   </tr>
                 ) : (
                   paginatedSectors.map((sector: any) => (
@@ -329,7 +329,7 @@ export default function Reports() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-700 print:hidden">
               <p className="text-[11px] text-slate-500 font-medium">
-                Showing {Math.min(filteredSectors.length, 1 + (currentPage - 1) * ITEMS_PER_PAGE)} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredSectors.length)} of {filteredSectors.length} entries
+                {t('table.showing', { start: Math.min(filteredSectors.length, 1 + (currentPage - 1) * ITEMS_PER_PAGE), end: Math.min(currentPage * ITEMS_PER_PAGE, filteredSectors.length), total: filteredSectors.length })}
               </p>
               <div className="flex gap-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
@@ -351,7 +351,7 @@ export default function Reports() {
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 text-center py-12">
-          <p className="text-slate-500">No report data found</p>
+          <p className="text-slate-500">{t('report.no_data')}</p>
         </div>
       )}
     </motion.div>

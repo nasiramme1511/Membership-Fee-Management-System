@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import api from '../lib/api';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import Statistics from '../components/landing/Statistics';
@@ -17,15 +18,15 @@ import Footer from '../components/landing/Footer';
 import ScrollToTop from '../components/landing/ScrollToTop';
 import PageLoader from '../components/PageLoader';
 
-const navLinks = [
-  { name: 'Home', href: '#hero' },
-  { name: 'About', href: '#about' },
-  { name: 'Features', href: '#features' },
-  { name: 'Gallery', href: '#gallery' },
-  { name: 'Contact', href: '#contact' }
-];
-
 export default function Landing() {
+  const { t } = useTranslation();
+  const navLinks = [
+    { name: t('nav.home'), href: '#hero' },
+    { name: t('nav.about'), href: '#about' },
+    { name: t('nav.features'), href: '#features' },
+    { name: t('nav.gallery'), href: '#gallery' },
+    { name: t('nav.contact'), href: '#contact' }
+  ];
   const [scrolled, setScrolled] = useState(false);
   const [stats, setStats] = useState({
     totalMembers: 0,

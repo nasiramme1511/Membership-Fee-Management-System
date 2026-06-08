@@ -1,37 +1,40 @@
 import { motion } from 'framer-motion';
 import { FileSpreadsheet, BarChart3, Users, Landmark, Download, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function SmartAdmin() {
+  const { t } = useTranslation();
+
   const cards = [
     {
       icon: FileSpreadsheet,
-      title: 'Automated Reporting',
-      desc: 'Generates real-time regulatory reports and financial summaries for executive audits.'
+      title: t('landing.feat_report_title'),
+      desc: t('landing.feat_report_desc')
     },
     {
       icon: BarChart3,
-      title: 'Contribution Analytics',
-      desc: 'Provides comprehensive dashboards detailing member fees, quotas, and historical trends.'
+      title: t('landing.feat_payment_title'),
+      desc: t('landing.feat_payment_desc')
     },
     {
       icon: Users,
-      title: 'Membership Tracking',
-      desc: 'Secures and manages official registries across all branches, wings, and structural tiers.'
+      title: t('landing.feat_member_title'),
+      desc: t('landing.feat_member_desc')
     },
     {
       icon: Landmark,
-      title: 'Financial Monitoring',
-      desc: 'Monitors deposit transactions and verifies direct bank transfers with active ledger compliance.'
+      title: t('landing.trust_security'),
+      desc: t('landing.trust_security_desc')
     },
     {
       icon: Download,
-      title: 'Export Services',
-      desc: 'Enables downloading audit matrices and contribution lists in PDF, Excel, and CSV formats.'
+      title: t('landing.feat_export_title'),
+      desc: t('landing.feat_export_desc')
     },
     {
       icon: Settings,
-      title: 'Administrative Assistance',
-      desc: 'Assists branch officers with smart tools to identify payment arrears and coordinate workflow audits.'
+      title: t('landing.feat_user_title'),
+      desc: t('landing.feat_user_desc')
     }
   ];
 
@@ -43,15 +46,14 @@ export default function SmartAdmin() {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#D4AF37]/50"></span>
-            Governance Framework
-            <span className="w-6 h-px bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
-            Digital Governance & Smart Administration
-          </h2>
-          <p className="text-sm text-gray-400 mt-4 max-w-2xl mx-auto leading-relaxed">
-            The platform supports modern membership administration, reporting, financial transparency, and intelligent operational assistance for authorized staff.
-          </p>
+            {t('landing.smart_subtitle')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-white">
+              {t('landing.smart_title')}
+            </h2>
+            <p className="text-sm text-gray-400 mt-4 max-w-2xl mx-auto leading-relaxed">
+              {t('landing.smart_desc')}
+            </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

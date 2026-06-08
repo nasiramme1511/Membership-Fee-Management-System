@@ -245,7 +245,7 @@ export default function UserManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('common.users_management')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage system user accounts and permissions</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.users_management')}</p>
         </div>
         <button onClick={openCreate} className="btn btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" />
@@ -278,7 +278,7 @@ export default function UserManagement() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             className="input pl-10"
-            placeholder="Search users by name, email, or username..."
+            placeholder={t('common.search')}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -469,14 +469,14 @@ export default function UserManagement() {
                     type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                    placeholder={editingUser ? t('common.keep_empty_to_stay') : 'Minimum 6 characters'}
+                    placeholder={editingUser ? t('common.keep_empty_to_stay') : t('form.min_length', { min: 6 })}
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {!editingUser && form.password && form.password.length < 6 && (
-                  <p className="text-xs text-red-500 mt-1">Password must be at least 6 characters.</p>
+                  <p className="text-xs text-red-500 mt-1">{t('form.min_length', { min: 6 })}</p>
                 )}
               </div>
               <div className="flex items-center gap-3">
@@ -518,7 +518,7 @@ export default function UserManagement() {
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
+                  placeholder={t('form.min_length', { min: 6 })}
                 />
               </div>
             </div>
@@ -536,10 +536,10 @@ export default function UserManagement() {
       <ConfirmDialog
         open={confirmDeleteUser.open}
         variant="danger"
-        title="Delete User Account"
-        message={`Are you sure you want to delete the account for "${confirmDeleteUser.user?.fullName}"? This action cannot be undone.`}
-        confirmLabel="Delete User"
-        cancelLabel="Cancel"
+        title={t('common_ui.confirm_delete')}
+        message={t('common.delete')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doDelete}
         onCancel={() => setConfirmDeleteUser({ open: false, user: null })}
       />

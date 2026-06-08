@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Target, Eye, ShieldCheck, Zap, Heart, Award } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface AboutProps {
   content: Record<string, string>;
@@ -7,26 +8,28 @@ interface AboutProps {
 }
 
 export default function About({ content, aboutImg }: AboutProps) {
+  const { t } = useTranslation();
+
   const values = [
     {
       icon: ShieldCheck,
-      title: 'Transparency',
-      desc: 'Open and verified financial tracking across all organizational sectors.'
+      title: t('landing.value_transparency'),
+      desc: t('landing.value_transparency_desc')
     },
     {
       icon: Award,
-      title: 'Accountability',
-      desc: 'Institutional integrity with strict verification pipelines for contributions.'
+      title: t('landing.value_accountability'),
+      desc: t('landing.value_accountability_desc')
     },
     {
       icon: Zap,
-      title: 'Digital Transformation',
-      desc: 'Pioneering smart administration solutions to eliminate paperwork.'
+      title: t('landing.value_digital'),
+      desc: t('landing.value_digital_desc')
     },
     {
       icon: Heart,
-      title: 'Community Service',
-      desc: 'Directing resource operations for the development of Dire Dawa.'
+      title: t('landing.value_community'),
+      desc: t('landing.value_community_desc')
     }
   ];
 
@@ -49,13 +52,13 @@ export default function About({ content, aboutImg }: AboutProps) {
               <div className="absolute -inset-2 bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10 rounded-3xl -rotate-1"></div>
               <img
                 src={aboutImg || '/photos/gate.jpg'}
-                alt="Prosperity Party Dire Dawa Branch Office Entrance Gate"
+                alt={t('landing.about_img_alt')}
                 className="relative w-full h-[520px] object-cover rounded-2xl shadow-2xl"
                 onError={(e) => { (e.target as HTMLImageElement).src = '/photos/gate.jpg'; }}
               />
               <div className="absolute -bottom-6 -right-6 bg-[#0B5D3B] text-white px-8 py-6 rounded-2xl shadow-2xl border border-[#0B5D3B]/50">
-                <div className="text-2xl font-black font-outfit">Dire Dawa</div>
-                <div className="text-[#D4AF37] text-xs font-black tracking-widest uppercase mt-1">Branch Office</div>
+                <div className="text-2xl font-black font-outfit">{t('hero.subtitle')}</div>
+                <div className="text-[#D4AF37] text-xs font-black tracking-widest uppercase mt-1">{t('hero.branch')}</div>
               </div>
             </div>
           </motion.div>
@@ -69,14 +72,14 @@ export default function About({ content, aboutImg }: AboutProps) {
           >
             <span className="inline-flex items-center gap-2 text-xs font-black text-[#0B5D3B] dark:text-[#D4AF37] uppercase tracking-[0.3em]">
               <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-              {content.about_title || 'Institutional Identity'}
+              {content.about_title || t('landing.about_label')}
             </span>
             <h2 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight font-outfit">
-              Prosperity Party Branch Office
+              {t('landing.about_subtitle')}
             </h2>
             
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-              {content.about_description || 'Serving the Dire Dawa Administration, our branch office is dedicated to digital governance, transparency, and public accountability. We strive to automate workflows, secure collections, and serve the community with high integrity.'}
+              {content.about_description || t('landing.about_fallback_desc')}
             </p>
 
             <div className="grid md:grid-cols-2 gap-6 pt-4">
@@ -85,10 +88,10 @@ export default function About({ content, aboutImg }: AboutProps) {
                   <div className="w-8 h-8 rounded-lg bg-[#0B5D3B]/10 flex items-center justify-center">
                     <Target className="w-4 h-4 text-[#0B5D3B]" />
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Mission Statement</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">{t('landing.mission_title')}</h3>
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">
-                  {content.mission_text || 'To enforce structural discipline and digital excellence, ensuring active participation and transparent membership contributions.'}
+                  {content.mission_text || t('landing.mission_text')}
                 </p>
               </div>
 
@@ -97,10 +100,10 @@ export default function About({ content, aboutImg }: AboutProps) {
                   <div className="w-8 h-8 rounded-lg bg-[#0B5D3B]/10 flex items-center justify-center">
                     <Eye className="w-4 h-4 text-[#0B5D3B]" />
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Vision Strategy</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm uppercase tracking-wider">{t('landing.vision_title')}</h3>
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">
-                  {content.vision_text || 'To lead as a highly computerized branch office that integrates modern tools, AI support, and automated audits.'}
+                  {content.vision_text || t('landing.vision_text')}
                 </p>
               </div>
             </div>

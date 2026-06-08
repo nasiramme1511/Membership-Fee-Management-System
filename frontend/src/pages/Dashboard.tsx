@@ -248,7 +248,7 @@ export default function Dashboard() {
           </h1>
           {user?.role === 'sector_officer' && (
             <p className="text-[11px] text-slate-500 font-medium">
-              {currentLang === 'am' ? 'ዘርፍ' : 'Sector'}: <span className="text-[var(--gold)] font-bold">{user?.assignedSectorUnit?.name || 'Assigned Sector'}</span>
+              {t('dashboard.active_sectors')}: <span className="text-[var(--gold)] font-bold">{user?.assignedSectorUnit?.name || t('dashboard.active_sectors')}</span>
             </p>
           )}
         </div>
@@ -294,7 +294,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">AI Insights</h3>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">{t('ai.insights')}</h3>
                   <span className="px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-[8px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
                     <Sparkles className="w-2.5 h-2.5" /> Live
                   </span>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <p className="text-[18px] font-black text-slate-900 dark:text-white">{aiInsights.paidToday}</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Paid Today</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('ai.paid_today')}</p>
                   </div>
                   <div>
                     <p className="text-[18px] font-black text-emerald-600">ETB {Number(aiInsights.todayRevenue).toLocaleString()}</p>
@@ -310,11 +310,11 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[18px] font-black text-rose-600">{aiInsights.unpaidThisMonth}</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Unpaid This Month</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('ai.unpaid_month')}</p>
                   </div>
                   <div>
                     <p className="text-[18px] font-black text-blue-600">{aiInsights.completionRate}%</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Completion Rate</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('dashboard.collection_rate')}</p>
                   </div>
                 </div>
                 {aiInsights.insight && (
@@ -405,13 +405,13 @@ export default function Dashboard() {
         <motion.div variants={itemVariants}>
           <motion.div whileHover={{ scale: 1.01 }} className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Sector Performance</h3>
+              <h3 className="text-lg font-semibold">{t('dashboard.sector_performance')}</h3>
               <button
                 onClick={() => setShowSectorChart(!showSectorChart)}
                 className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
               >
                 <BarChart3 className="w-3.5 h-3.5" />
-                {showSectorChart ? 'Show Table' : 'Show Chart'}
+                {showSectorChart ? t('buttons.export') : t('buttons.search')}
               </button>
             </div>
             {showSectorChart ? (
@@ -430,11 +430,10 @@ export default function Dashboard() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700">
-                      <th className="text-left py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Sector</th>
-                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Members</th>
-                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Paid</th>
-                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Unpaid</th>
-                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Collection</th>
+                      <th className="text-left py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">{t('sector.name')}</th>
+                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">{t('common.paid')}</th>
+                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">{t('common.unpaid')}</th>
+                      <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">{t('common.collection_rate')}</th>
                       <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase tracking-wider">Rate</th>
                     </tr>
                   </thead>

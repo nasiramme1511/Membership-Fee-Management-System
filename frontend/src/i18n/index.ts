@@ -4,7 +4,10 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import am from './locales/am.json';
-import or from './locales/or.json';
+import om from './locales/om.json';
+import so from './locales/so.json';
+
+const SUPPORTED_LANGS = ['en', 'am', 'om', 'so'];
 
 i18n
   .use(LanguageDetector)
@@ -13,12 +16,15 @@ i18n
     resources: {
       en: { translation: en },
       am: { translation: am },
-      or: { translation: or }
+      om: { translation: om },
+      so: { translation: so }
     },
     fallbackLng: 'en',
     detection: {
       order: ['localStorage', 'cookie'],
-      caches: ['localStorage', 'cookie']
+      caches: ['localStorage', 'cookie'],
+      lookupLocalStorage: 'i18nextLng',
+      checkWhitelist: true
     },
     interpolation: {
       escapeValue: false
@@ -29,4 +35,5 @@ i18n
     }
   });
 
+export { SUPPORTED_LANGS };
 export default i18n;

@@ -595,7 +595,7 @@ export default function Payments() {
           <button 
             onClick={() => setSelectedReceiptId(payment.receiptId)}
             className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-400 hover:text-primary transition-colors"
-            title="View Receipt"
+            title={t('common.view_receipt')}
           >
             <FileText className="w-4 h-4" />
           </button>
@@ -603,7 +603,7 @@ export default function Payments() {
             <button
               onClick={() => handleDeletePayment(payment.id || payment._id || '')}
               className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 rounded transition-colors"
-              title="Delete Payment"
+              title={t('common.delete')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -677,7 +677,7 @@ export default function Payments() {
   }
 
   const getStatusBadge = (status: string) => {
-    if (status === 'Unpaid') return <span className="badge badge-error">Unpaid</span>
+    if (status === 'Unpaid') return <span className="badge badge-error">{t('common.unpaid')}</span>
     const colors: Record<string, string> = {
       'Paid': 'badge-success',
       'Partial': 'badge-warning',
@@ -696,7 +696,7 @@ export default function Payments() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('common.payments')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">Track and record member payments</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.payment_history')}</p>
         </div>
         <div className="flex items-center gap-2">
           {activeTab === 'sector' && (
@@ -769,13 +769,13 @@ export default function Payments() {
         
         <div className="flex flex-wrap items-center justify-end gap-2 w-full md:w-2/3">
           {activeTab === 'monthly' && (
-            <button onClick={() => navigate(-1)} className="btn btn-secondary flex items-center gap-2" title="Go back">
+            <button onClick={() => navigate(-1)} className="btn btn-secondary flex items-center gap-2" title={t('common.back')}>
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">{t('common.back')}</span>
             </button>
           )}
 
-          <button onClick={() => setShowFilters(!showFilters)} className={`btn btn-secondary flex items-center gap-2 ${showFilters ? 'bg-gray-200 dark:bg-gray-700' : ''}`} title="Toggle filters">
+          <button onClick={() => setShowFilters(!showFilters)} className={`btn btn-secondary flex items-center gap-2 ${showFilters ? 'bg-gray-200 dark:bg-gray-700' : ''}`} title={t('common.filter')}>
             <Filter className="w-4 h-4" />
             {t('common.filter')}
           </button>
@@ -861,11 +861,11 @@ export default function Payments() {
               onChange={(e) => { setFilters(prev => ({ ...prev, membershipType: e.target.value })); setMonthlyPage(1); setHistoryPage(1); }}
               className="input"
             >
-              <option value="">All Types</option>
-              <option value="Salary-Based">Salary-Based</option>
+              <option value="">{t('common_ui.all')}</option>
+              <option value="Salary-Based">{t('common.salary')}</option>
               <option value="Non-Salary">Non-Salary</option>
-              <option value="Business">Business</option>
-              <option value="Investor">Investor</option>
+              <option value="Business">{t('common.business_type')}</option>
+              <option value="Investor">{t('common.investor_tiers')}</option>
               <option value="Student">Student</option>
             </select>
           </div>
@@ -1077,7 +1077,7 @@ export default function Payments() {
               <button disabled={monthlyPage >= monthlyPages || monthlyPages === 0} onClick={() => setMonthlyPage(p => p + 1)} className="btn btn-secondary px-2 py-1 disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
               <button disabled={monthlyPage >= monthlyPages || monthlyPages === 0} onClick={() => setMonthlyPage(monthlyPages)} className="btn btn-secondary px-2 py-1 text-xs disabled:opacity-50">»</button>
               <select value={monthlyLimit} onChange={(e) => { setMonthlyLimit(Number(e.target.value)); setMonthlyPage(1) }} className="input ml-2 py-1 text-sm w-24">
-                {[15, 25, 50, 100].map(n => <option key={n} value={n}>{n} / page</option>)}
+                {[15, 25, 50, 100].map(n => <option key={n} value={n}>{n} {t('common.per_page')}</option>)}
               </select>
             </div>
           </div>
@@ -1093,8 +1093,8 @@ export default function Payments() {
                   <CreditCard className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold">{selectedPaymentIds.length} payments selected</p>
-                  <p className="text-[10px] text-blue-100 uppercase tracking-widest font-bold">Manage multiple payment records</p>
+                  <p className="text-sm font-bold">{selectedPaymentIds.length} {t('common.payments')} {t('common.selected')}</p>
+                  <p className="text-[10px] text-blue-100 uppercase tracking-widest font-bold">{t('common.manage_multiple_records')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -1153,7 +1153,7 @@ export default function Payments() {
                 {loading ? (
                   <tr><td colSpan={10} className="py-20 text-center"><div className="flex flex-col items-center gap-4"><div className="relative flex items-center justify-center"><div className="w-16 h-16 border-2 border-[#FFD700]/10 rounded-full"></div><div className="absolute inset-0 w-16 h-16 border-2 border-transparent border-t-[#FFD700] border-r-[#D4AF37]/40 rounded-full animate-spin" style={{ animationDuration: '1.5s' }}></div><img src="/pp-logo.png" alt="logo" className="absolute w-8 h-8 object-contain drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]" style={{ animation: 'pulse 2s ease-in-out infinite' }} /></div><p className="text-[10px] font-bold uppercase tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] via-[#FFD700] to-[#D4AF37]">{t('common.loading')}...</p></div></td></tr>
                 ) : payments.length === 0 ? (
-                  <tr><td colSpan={10} className="text-center py-8 text-gray-500">No payments found</td></tr>
+                  <tr><td colSpan={10} className="text-center py-8 text-gray-500">{t('common.no_data')}</td></tr>
                 ) : (
                   payments.map(p => renderPaymentRow(p))
                 )}
@@ -1163,7 +1163,7 @@ export default function Payments() {
           {/* History Pagination */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {historyTotal === 0 ? 'No payments found' : `Showing ${((historyPage - 1) * historyLimit) + 1}–${Math.min(historyPage * historyLimit, historyTotal)} of ${historyTotal} payments`}
+              {historyTotal === 0 ? t('common.no_data') : t('table.showing', { start: ((historyPage - 1) * historyLimit) + 1, end: Math.min(historyPage * historyLimit, historyTotal), total: historyTotal })}
             </p>
             <div className="flex items-center gap-1">
               <button disabled={historyPage === 1} onClick={() => setHistoryPage(1)} className="btn btn-secondary px-2 py-1 text-xs disabled:opacity-50">«</button>
@@ -1179,7 +1179,7 @@ export default function Payments() {
               <button disabled={historyPage >= historyPages || historyPages === 0} onClick={() => setHistoryPage(p => p + 1)} className="btn btn-secondary px-2 py-1 disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
               <button disabled={historyPage >= historyPages || historyPages === 0} onClick={() => setHistoryPage(historyPages)} className="btn btn-secondary px-2 py-1 text-xs disabled:opacity-50">»</button>
               <select value={historyLimit} onChange={(e) => { setHistoryLimit(Number(e.target.value)); setHistoryPage(1) }} className="input ml-2 py-1 text-sm w-24">
-                {[15, 25, 50, 100].map(n => <option key={n} value={n}>{n} / page</option>)}
+                {[15, 25, 50, 100].map(n => <option key={n} value={n}>{n} {t('common.per_page')}</option>)}
               </select>
             </div>
           </div>
@@ -1190,35 +1190,35 @@ export default function Payments() {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="card border-b-2 border-blue-200 dark:border-blue-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">Total Deposited</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.total_deposited')}</p>
               <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(sectorPaymentSummary.totalAmount).toLocaleString()}</p>
-              <p className="text-[9px] text-slate-400 mt-0.5">All approved deposits</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">{t('common.approved_deposits')}</p>
             </div>
             <div className="card border-b-2 border-emerald-200 dark:border-emerald-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">Remaining Balance</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.remaining_balance')}</p>
               <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(sectorPaymentSummary.remainingBalance).toLocaleString()}</p>
-              <p className="text-[9px] text-slate-400 mt-0.5">Collection - Deposits</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">{t('common.collection_deposits')}</p>
             </div>
             <div className="card border-b-2 border-[var(--gold)]/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">Collection Rate</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.payment_percentage')}</p>
               <p className="text-xl font-black text-emerald-600">{sectorPaymentSummary.collectionRate}%</p>
-              <p className="text-[9px] text-slate-400 mt-0.5 font-sans">Paid members rate</p>
+              <p className="text-[9px] text-slate-400 mt-0.5 font-sans">{t('common.paid_members_rate')}</p>
             </div>
             <div className="card border-b-2 border-amber-200 dark:border-amber-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">Pending Approvals</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.pending_approvals')}</p>
               <p className="text-xl font-black text-amber-600">{sectorPaymentSummary.totalPending}</p>
-              <p className="text-[9px] text-slate-400 mt-0.5 font-sans">Awaiting review • {sectorPaymentSummary.totalApproved} approved</p>
+              <p className="text-[9px] text-slate-400 mt-0.5 font-sans">{t('common.awaiting_review')} • {sectorPaymentSummary.totalApproved} {t('common.approved')}</p>
             </div>
           </div>
 
           {/* Status Filter Pills */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Filter:</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">{t('common.filter')}:</span>
             {[
-              { key: '', label: 'All' },
-              { key: 'PENDING', label: `Pending (${sectorPaymentSummary.totalPending})` },
-              { key: 'APPROVED', label: `Approved (${sectorPaymentSummary.totalApproved})` },
-              { key: 'REJECTED', label: `Rejected (${sectorPaymentSummary.totalRejected})` },
+              { key: '', label: t('common_ui.all') },
+              { key: 'PENDING', label: `${t('common.pending')} (${sectorPaymentSummary.totalPending})` },
+              { key: 'APPROVED', label: `${t('common.approved')} (${sectorPaymentSummary.totalApproved})` },
+              { key: 'REJECTED', label: `${t('common.rejected')} (${sectorPaymentSummary.totalRejected})` },
               { key: 'CORRECTION_REQUESTED', label: `Correction (${sectorPaymentSummary.totalCorrectionRequested})` },
               { key: 'REOPENED', label: `Reopened (${sectorPaymentSummary.totalReopened})` },
               { key: 'FLAGGED', label: `Flagged (${sectorPaymentSummary.totalFlagged})` },
@@ -1250,7 +1250,7 @@ export default function Payments() {
                   <th>Receipt</th>
                   <th>Uploaded By</th>
                   <th>Date</th>
-                  <th className="text-right">Actions</th>
+                  <th className="text-right">{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -1310,13 +1310,13 @@ export default function Payments() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:text-primary/80 text-xs font-medium flex items-center gap-1 font-sans"
-                            title={`View ${sp.receiptFile}`}
+                            title={t('common.view_receipt')}
                           >
                             <FileText className="w-3.5 h-3.5" />
                             {sp.receiptFile.split('-').pop()}
                           </a>
                         ) : (
-                          <span className="text-xs text-gray-400 font-sans">No receipt</span>
+                          <span className="text-xs text-gray-400 font-sans">{t('common.no_data')}</span>
                         )}
                       </td>
                       <td className="text-xs font-sans">{sp.uploader?.fullName || '-'}</td>
@@ -1326,7 +1326,7 @@ export default function Payments() {
                           <button
                             onClick={() => { setAuditLogsPaymentId(sp._id || sp.id); setShowAuditLogsModal(true) }}
                             className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-gray-400 hover:text-primary transition-colors"
-                            title="Audit History"
+                            title={t('common.payment_history')}
                           >
                             <History className="w-4 h-4" />
                           </button>
@@ -1334,7 +1334,7 @@ export default function Payments() {
                             <button
                               onClick={() => { setEditPayment(sp); setSectorModalMode('edit'); setShowSectorPaymentModal(true) }}
                               className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 rounded transition-colors"
-                              title="Edit"
+                              title={t('common.edit')}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -1343,7 +1343,7 @@ export default function Payments() {
                             <button
                               onClick={() => { setEditPayment(sp); setSectorModalMode('correct'); setShowSectorPaymentModal(true) }}
                               className="p-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/20 text-amber-600 rounded transition-colors"
-                              title="Request Correction"
+                              title={t('common.edit')}
                             >
                               <RefreshCw className="w-4 h-4" />
                             </button>
@@ -1353,14 +1353,14 @@ export default function Payments() {
                               <button
                                 onClick={() => handleApproveSectorPayment(sp._id || sp.id)}
                                 className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/20 text-green-600 rounded transition-colors"
-                                title="Approve"
+                                title={t('common.approve')}
                               >
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleRejectSectorPayment(sp._id || sp.id)}
                                 className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 rounded transition-colors"
-                                title="Reject"
+                                title={t('common.reject')}
                               >
                                 <Ban className="w-4 h-4" />
                               </button>
@@ -1370,7 +1370,7 @@ export default function Payments() {
                             <button
                               onClick={() => handleReopenSectorPayment(sp._id || sp.id)}
                               className="p-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 rounded transition-colors"
-                              title="Reopen"
+                              title={t('common.edit')}
                             >
                               <RefreshCw className="w-4 h-4" />
                             </button>
@@ -1379,7 +1379,7 @@ export default function Payments() {
                             <button
                               onClick={() => { setEditPayment(sp); setSectorModalMode('edit'); setShowSectorPaymentModal(true) }}
                               className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 rounded transition-colors"
-                              title="Admin Edit"
+                              title={t('common.edit')}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -1462,10 +1462,10 @@ export default function Payments() {
       <ConfirmDialog
         open={confirmSaveSelected}
         variant="info"
-        title="Record Selected Payments"
-        message={`This will record payments for ${members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length} selected members for ${t(`common.eth_month_${selectedMonthNum}`)} ${selectedYearNum}.`}
-        confirmLabel="Record Payments"
-        cancelLabel="Cancel"
+        title={t('common_ui.record_payments_title')}
+        message={t('common_ui.record_payments_message', { count: members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length, month: t(`common.eth_month_${selectedMonthNum}`), year: selectedYearNum })}
+        confirmLabel={t('common.save_selected')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doSaveSelected}
         onCancel={() => setConfirmSaveSelected(false)}
       />
@@ -1473,10 +1473,10 @@ export default function Payments() {
       <ConfirmDialog
         open={confirmPayAll}
         variant="info"
-        title="Pay All Unpaid Members"
-        message={`This will record payments for all ${confirmPayAllCount} unpaid members matching the current filters for ${t(`common.eth_month_${selectedMonthNum}`)} ${selectedYearNum}.`}
-        confirmLabel="Record All Payments"
-        cancelLabel="Cancel"
+        title={t('common_ui.pay_all_title')}
+        message={t('common_ui.pay_all_message', { count: confirmPayAllCount, month: t(`common.eth_month_${selectedMonthNum}`), year: selectedYearNum })}
+        confirmLabel={t('common.pay_all_filtered')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doPayAll}
         onCancel={() => setConfirmPayAll(false)}
       />
@@ -1484,10 +1484,10 @@ export default function Payments() {
       <ConfirmDialog
         open={confirmDeletePayment.open}
         variant="danger"
-        title="Reverse Payment"
-        message="This will permanently delete this payment record. This action cannot be undone."
-        confirmLabel="Reverse Payment"
-        cancelLabel="Cancel"
+        title={t('common_ui.reverse_payment_title')}
+        message={t('common_ui.reverse_payment_message')}
+        confirmLabel={t('common.reverse_payment')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doDeletePayment}
         onCancel={() => setConfirmDeletePayment({ open: false, id: null })}
       />
@@ -1495,19 +1495,19 @@ export default function Payments() {
       <ConfirmDialog
         open={confirmBulkDeletePayments}
         variant="danger"
-        title={`Delete ${selectedPaymentIds.length} Payments`}
-        message={`This will permanently delete ${selectedPaymentIds.length} selected payments and their associated records. This action cannot be undone.`}
-        confirmLabel="Delete Selected"
-        cancelLabel="Cancel"
+        title={t('common_ui.delete_payments_title', { count: selectedPaymentIds.length })}
+        message={t('common_ui.delete_payments_message', { count: selectedPaymentIds.length })}
+        confirmLabel={t('common.delete_selected')}
+        cancelLabel={t('common.cancel')}
         onConfirm={doBulkDeletePayments}
         onCancel={() => setConfirmBulkDeletePayments(false)}
       />
 
       <DeleteAllConfirmDialog
         open={confirmDeleteAllPayments}
-        title="Delete All Payments"
-        message="This will permanently delete ALL payments and their associated records. This action cannot be undone."
-        confirmText="DELETE ALL PAYMENTS"
+        title={t('common_ui.delete_all_payments_title')}
+        message={t('common_ui.delete_all_payments_message')}
+        confirmText={t('common_ui.delete_all_payments_confirm')}
         onConfirm={doDeleteAllPayments}
         onCancel={() => setConfirmDeleteAllPayments(false)}
       />

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, Mail, Phone, Languages, Shield, Globe, Sun, Moon } from 'lucide-react';
 import { getEthiopianYear } from '../utils/ethiopianCalendar';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function PublicLayout() {
   const { t, i18n } = useTranslation();
@@ -13,10 +14,6 @@ export default function PublicLayout() {
   const location = useLocation();
 
   const currentLang = i18n.language || 'am';
-  const toggleLanguage = () => {
-    const newLang = currentLang.startsWith('en') ? 'am' : 'en';
-    i18n.changeLanguage(newLang);
-  };
 
   useEffect(() => {
     // Check initial dark mode state
@@ -46,12 +43,12 @@ export default function PublicLayout() {
   };
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/#about' },
-    { name: 'Features', path: '/#features' },
-    { name: 'Membership', path: '/#membership' },
-    { name: 'Reports', path: '/#reports' },
-    { name: 'Contact', path: '/contact' }
+    { name: t('nav.home'), path: '/' },
+    { name: t('nav.about'), path: '/#about' },
+    { name: t('nav.features'), path: '/#features' },
+    { name: t('nav.dashboard'), path: '/#dashboard' },
+    { name: t('nav.reports'), path: '/#reports' },
+    { name: t('nav.contact'), path: '/contact' }
   ];
 
   return (
@@ -105,13 +102,7 @@ export default function PublicLayout() {
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
-            <button
-              onClick={toggleLanguage}
-              className="p-2 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/50 transition-all duration-300 bg-white/50 dark:bg-transparent"
-              title="Toggle Language"
-            >
-              <Globe className="w-5 h-5" />
-            </button>
+            <LanguageSwitcher />
             
             <button 
               onClick={() => navigate('/login')} 
@@ -174,7 +165,7 @@ export default function PublicLayout() {
                 </div>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium max-w-sm">
-                Empowering the community through digital transformation and transparent membership management for the Dire Dawa Branch.
+                {t('landing.footer_desc')}
               </p>
               <div className="flex gap-6">
                 {['facebook', 'twitter', 'linkedin', 'instagram'].map(social => (
@@ -187,11 +178,11 @@ export default function PublicLayout() {
             
             <div>
               <h4 className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.4em] mb-12 relative inline-block">
-                Quick Navigation
+                {t('landing.footer_quick_nav')}
                 <span className="absolute -bottom-4 left-0 w-8 h-[2px] bg-primary dark:bg-gold"></span>
               </h4>
               <ul className="space-y-6">
-                {['Home', 'About Us', 'Core Features', 'Membership Portal', 'Public Reports'].map(link => (
+                {[t('nav.home'), t('nav.about'), t('nav.features'), t('nav.dashboard'), t('nav.reports')].map(link => (
                   <li key={link}>
                     <a href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-gold transition-all duration-300 flex items-center gap-2 group font-semibold">
                       <span className="w-0 h-[1px] bg-primary dark:bg-gold transition-all duration-300 group-hover:w-4"></span>
@@ -204,11 +195,11 @@ export default function PublicLayout() {
             
             <div>
               <h4 className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.4em] mb-12 relative inline-block">
-                Legal & Security
+                {t('nav.security')}
                 <span className="absolute -bottom-4 left-0 w-8 h-[2px] bg-primary dark:bg-gold"></span>
               </h4>
               <ul className="space-y-6">
-                {['Privacy Policy', 'Terms of Service', 'Security Standards', 'Data Protection', 'Contact Support'].map(link => (
+                {[t('landing.footer_privacy'), t('landing.footer_terms'), t('nav.security'), t('landing.trust_integrity'), t('nav.contact')].map(link => (
                   <li key={link}>
                     <a href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-gold transition-all duration-300 flex items-center gap-2 group font-semibold">
                       <span className="w-0 h-[1px] bg-primary dark:bg-gold transition-all duration-300 group-hover:w-4"></span>
@@ -221,7 +212,7 @@ export default function PublicLayout() {
             
             <div>
               <h4 className="text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.4em] mb-12 relative inline-block">
-                Office Contact
+                {t('landing.footer_contact')}
                 <span className="absolute -bottom-4 left-0 w-8 h-[2px] bg-primary dark:bg-gold"></span>
               </h4>
               <div className="space-y-8">
@@ -230,7 +221,7 @@ export default function PublicLayout() {
                     <Phone size={18} className="text-primary dark:text-gold" />
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                    General Inquiries<br />
+                    {t('landing.footer_inquiries')}<br />
                     <span className="text-slate-900 dark:text-white text-lg font-bold">+251 911 000 000</span>
                   </p>
                 </div>
@@ -239,7 +230,7 @@ export default function PublicLayout() {
                     <Mail size={18} className="text-primary dark:text-gold" />
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                    Support Email<br />
+                    {t('common.email')}<br />
                     <span className="text-slate-900 dark:text-white font-bold">support@pp-diredawa.org</span>
                   </p>
                 </div>
@@ -253,7 +244,7 @@ export default function PublicLayout() {
             </p>
             <div className="flex items-center gap-4 text-slate-500 dark:text-slate-600">
                <Shield size={16} />
-               <span className="text-[10px] font-black uppercase tracking-widest">Secure AES-256 Encrypted</span>
+               <span className="text-[10px] font-black uppercase tracking-widest">{t('landing.trust_security')}</span>
             </div>
           </div>
         </div>

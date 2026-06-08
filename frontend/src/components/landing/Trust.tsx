@@ -1,27 +1,30 @@
 import { motion } from 'framer-motion';
 import { Eye, ShieldCheck, Activity, Award } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Trust() {
+  const { t } = useTranslation();
+
   const cards = [
     {
       icon: Eye,
-      title: 'Financial Transparency',
-      desc: 'All membership fee collections are audited with double-entry ledger mappings and transparent reporting.'
+      title: t('landing.value_transparency'),
+      desc: t('landing.value_transparency_desc')
     },
     {
       icon: ShieldCheck,
-      title: 'Secure Contributions',
-      desc: 'Bank deposit receipts and user registration files are protected by AES-256 government-grade encryption standards.'
+      title: t('landing.trust_security'),
+      desc: t('landing.trust_security_desc')
     },
     {
       icon: Activity,
-      title: 'Real-Time Reporting',
-      desc: 'Access direct metrics and transaction counts instantaneously through integrated database logs.'
+      title: t('landing.trust_audit'),
+      desc: t('landing.trust_audit_desc')
     },
     {
       icon: Award,
-      title: 'Digital Governance',
-      desc: 'Advancing organizational efficiency by automating paper-based processes and introducing role-based access.'
+      title: t('landing.trust_integrity'),
+      desc: t('landing.trust_integrity_desc')
     }
   ];
 
@@ -31,15 +34,14 @@ export default function Trust() {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            Platform Integrity
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-            Why Trust This Platform
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto leading-relaxed">
-            Delivering secure, compliant, and verified digital workflows to foster public confidence and administrative integrity.
-          </p>
+            {t('landing.trust_subtitle')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
+              {t('landing.trust_title')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto leading-relaxed">
+              {t('landing.trust_desc')}
+            </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

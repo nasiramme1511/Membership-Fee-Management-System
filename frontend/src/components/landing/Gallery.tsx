@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion as m, AnimatePresence as Ap } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface GalleryImage {
   id: number | string;
@@ -16,6 +17,7 @@ interface GalleryProps {
 }
 
 export default function Gallery({ galleryImages }: GalleryProps) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -23,36 +25,36 @@ export default function Gallery({ galleryImages }: GalleryProps) {
   const defaultImages: GalleryImage[] = [
     {
       id: 'static-building',
-      title: 'Main Administrative Building',
-      description: 'The administrative headquarters of Prosperity Party Dire Dawa Branch.',
+      title: t('landing.gallery_building_title'),
+      description: t('landing.gallery_building_desc'),
       image: '/photos/building.jpg',
       category: 'building'
     },
     {
       id: 'static-gate',
-      title: 'Branch Office Entrance Gate',
-      description: 'The entrance checkpoint of the branch office in Dire Dawa.',
+      title: t('landing.gallery_gate_title'),
+      description: t('landing.gallery_gate_desc'),
       image: '/photos/gate.jpg',
       category: 'gate'
     },
     {
       id: 'static-leadership',
-      title: 'Executive Conference Hall',
-      description: 'Leadership office meeting room for decision-making.',
+      title: t('landing.gallery_leadership_title'),
+      description: t('landing.gallery_leadership_desc'),
       image: '/photos/leadership.jpg',
       category: 'leadership'
     },
     {
       id: 'static-meeting1',
-      title: 'Institutional Discussion Panel',
-      description: 'Members participating in administrative review and planning.',
+      title: t('landing.gallery_meeting1_title'),
+      description: t('landing.gallery_meeting1_desc'),
       image: '/photos/meeting-1.jpg',
       category: 'meetings'
     },
     {
       id: 'static-meeting2',
-      title: 'Community Engagement Assembly',
-      description: 'Branch representatives presenting strategic digital reforms.',
+      title: t('landing.gallery_meeting2_title'),
+      description: t('landing.gallery_meeting2_desc'),
       image: '/photos/meeting-2.jpg',
       category: 'meetings'
     }
@@ -114,15 +116,14 @@ export default function Gallery({ galleryImages }: GalleryProps) {
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
             <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            Media & Records
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-            Photo Gallery
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
-            Visual highlights of assemblies, leadership forums, and public programs at the branch office.
-          </p>
+            {t('landing.gallery_subtitle')}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
+              {t('landing.photo_gallery')}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
+              {t('landing.trust_desc')}
+            </p>
         </div>
 
         {/* Filter Bar */}
@@ -137,7 +138,7 @@ export default function Gallery({ galleryImages }: GalleryProps) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-900 dark:text-gray-400 dark:hover:bg-slate-800'
               }`}
             >
-              {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              {cat === 'all' ? t('common_ui.all') : t(`landing.gallery_category_${cat}`, cat.charAt(0).toUpperCase() + cat.slice(1))}
             </button>
           ))}
         </div>
@@ -174,7 +175,7 @@ export default function Gallery({ galleryImages }: GalleryProps) {
                   </div>
 
                   <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-3 group-hover:translate-y-0 transition-transform duration-500">
-                    <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{img.category || 'Gallery'}</span>
+                    <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{img.category || t('landing.photo_gallery')}</span>
                     <h3 className="text-white font-black text-sm uppercase tracking-wide mt-1 font-outfit line-clamp-1">{img.title}</h3>
                     <p className="text-gray-300 text-[11px] mt-1 line-clamp-2 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-75">
                       {img.description}
@@ -226,7 +227,7 @@ export default function Gallery({ galleryImages }: GalleryProps) {
                 <h4 className="font-bold text-lg font-outfit">{filteredImages[lightboxIndex].title}</h4>
                 <p className="text-gray-400 text-xs mt-2 leading-relaxed">{filteredImages[lightboxIndex].description}</p>
                 <div className="text-[10px] text-gray-500 font-mono mt-3">
-                  Image {lightboxIndex + 1} of {filteredImages.length}
+                  {t('common_ui.no')} {lightboxIndex + 1} {t('table.of')} {filteredImages.length}
                 </div>
               </div>
             </div>
