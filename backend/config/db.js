@@ -81,6 +81,14 @@ const connectDB = async (retries = 5) => {
         const SectorPaymentAuditLog = require('../models/SectorPaymentAuditLog');
         const User               = require('../models/User');
 
+        // New AI Copilot Models
+        const Conversation       = require('../models/Conversation');
+        const Message            = require('../models/Message');
+        const ConversationMetadata = require('../models/ConversationMetadata');
+        const Notification       = require('../models/Notification');
+        const AIActivityLog      = require('../models/AIActivityLog');
+        const UserDashboardPreference = require('../models/UserDashboardPreference');
+
         SectorType.hasMany(SectorUnit, { foreignKey: 'sectorTypeId', as: 'units' });
         SectorUnit.belongsTo(SectorType, { foreignKey: 'sectorTypeId', as: 'sectorType' });
 
@@ -96,6 +104,25 @@ const connectDB = async (retries = 5) => {
           otherKey: 'sectorUnitId',
           as: 'sectorUnits'
         });
+
+        // AI Copilot Associations
+        User.hasMany(Conversation, { foreignKey: 'userId', as: 'conversations' });
+        Conversation.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+        Conversation.hasMany(Message, { foreignKey: 'conversationId', as: 'messages', onDelete: 'CASCADE' });
+        Message.belongsTo(Conversation, { foreignKey: 'conversationId', as: 'conversation' });
+
+        Conversation.hasOne(ConversationMetadata, { foreignKey: 'conversationId', as: 'metadata', onDelete: 'CASCADE' });
+        ConversationMetadata.belongsTo(Conversation, { foreignKey: 'conversationId', as: 'conversation' });
+
+        User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications', onDelete: 'CASCADE' });
+        Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+        User.hasMany(AIActivityLog, { foreignKey: 'userId', as: 'aiActivityLogs', onDelete: 'CASCADE' });
+        AIActivityLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+        User.hasMany(UserDashboardPreference, { foreignKey: 'userId', as: 'dashboardPreferences', onDelete: 'CASCADE' });
+        UserDashboardPreference.belongsTo(User, { foreignKey: 'userId', as: 'user' });
       }
 
       await sequelize.sync({ alter: false });

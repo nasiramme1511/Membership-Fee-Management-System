@@ -6,6 +6,7 @@ import Members from './pages/Members'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import LandingPageManager from './pages/LandingPageManager'
 import Profile from './pages/Profile'
 import UserManagement from './pages/UserManagement'
 import AIAssistant from './pages/AIAssistant'
@@ -24,8 +25,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<Landing />} />
         <Route path="/platform" element={<Platform />} />
         <Route path="/security" element={<Security />} />
         <Route path="/contact" element={<Contact />} />
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="payments" element={<Payments />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="settings/landing-page" element={<LandingPageManager />} />
         <Route path="profile" element={<Profile />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="ai-assistant" element={<AIAssistant />} />

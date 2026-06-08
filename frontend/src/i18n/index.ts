@@ -15,7 +15,7 @@ i18n
       am: { translation: am },
       or: { translation: or }
     },
-    fallbackLng: 'am',
+    fallbackLng: 'en',
     detection: {
       order: ['localStorage', 'cookie'],
       caches: ['localStorage', 'cookie']

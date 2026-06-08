@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, Users, Wallet, FileText, LogOut, Menu, Sun, Moon,
-  Settings, UserCircle, ShieldCheck, ChevronRight, Languages, Bot
+  Settings, UserCircle, ShieldCheck, ChevronRight, Languages, Bot, Image
 } from 'lucide-react'
 import PageLoader from './PageLoader'
 
@@ -46,6 +46,7 @@ export default function Layout() {
     { icon: Bot,             label: 'AI Assistant',        path: '/ai-assistant', roles: ['admin', 'sector_officer', 'expert'] },
     { icon: ShieldCheck,     label: t('common.users'),     path: '/users',     roles: ['admin'] },
     { icon: Settings,        label: t('common.settings'),  path: '/settings',  roles: ['admin'] },
+    { icon: Image,           label: 'Landing Page',       path: '/settings/landing-page', roles: ['admin'] },
   ].filter(item => item.roles.includes(user?.role || ''))
 
   const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')
