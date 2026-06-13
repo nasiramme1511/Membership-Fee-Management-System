@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -57,25 +57,58 @@ export default function Landing() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const heroImages = [
+    '/new_hero_image.png',
+    '/new_hero_image_2.png',
+    '/new_hero_image_3.png',
+    '/new_hero_image_4.png'
+  ];
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="overflow-x-hidden bg-slate-50 dark:bg-ebony transition-colors duration-500">
       
       {/* ── 1. HERO SECTION ────────────────────────── */}
       <section className="relative py-32 flex items-center justify-center overflow-hidden border-b border-slate-200 dark:border-white/5" style={{ perspective: 1000 }}>
-        {/* Background Image with Parallax effect */}
+        {/* Continuous Zoom Wrapper for Fading Images */}
         <motion.div 
           className="absolute inset-0 z-0"
-          initial={{ scale: 1.2 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2, ease: "easeOut" }}
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         >
-          <img 
-            src="/luxury-hero.png" 
-            alt="Hero Background" 
-            className="w-full h-full object-cover scale-110"
-          />
-          <div className="absolute inset-0 bg-white/20 dark:bg-ebony/40"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-50 dark:from-transparent dark:via-transparent dark:to-ebony"></div>
+          {heroImages.map((imgSrc, index) => (
+            <motion.div 
+              key={imgSrc}
+              className="absolute inset-0 z-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: currentImageIndex === index ? 1 : 0 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+              style={{ pointerEvents: currentImageIndex === index ? 'auto' : 'none' }}
+            >
+              {/* Blurred background to prevent white space */}
+              <img 
+                src={imgSrc} 
+                alt="" 
+                className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-70"
+              />
+              {/* Actual image, fully visible without cutting sides, aligned to top */}
+              <img 
+                src={imgSrc} 
+                alt={`Hero Background ${index + 1}`} 
+                className="absolute inset-0 w-full h-full object-contain object-top"
+              />
+              <div className="absolute inset-0 bg-white/20 dark:bg-ebony/40"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-50 dark:from-transparent dark:via-transparent dark:to-ebony"></div>
+            </motion.div>
+          ))}
         </motion.div>
 
         <div className="max-w-5xl mx-auto px-8 w-full relative z-10 flex flex-col items-center text-center pt-20">
@@ -181,16 +214,45 @@ export default function Landing() {
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="absolute -inset-6 bg-primary/10 rounded-[3rem] rotate-3 translate-x-4"></div>
-            <img 
-              src="/luxury-about.png" 
-              alt="Leadership" 
-              className="relative z-10 w-full rounded-[2.5rem] shadow-2xl hover:scale-[1.02] transition-transform duration-700"
+            {/* Animated glow background */}
+            <motion.div
+              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-amber-400/10 to-primary/20 dark:from-gold/20 dark:via-amber-300/10 dark:to-gold/20 rounded-[3rem] blur-2xl"
             />
-            <div className="absolute -bottom-10 -right-10 bg-primary dark:bg-gold p-12 rounded-[2.5rem] shadow-2xl z-20 hidden md:block">
-               <p className="text-white dark:text-ebony text-4xl font-black mb-2 tracking-tighter">15+</p>
-               <p className="text-white/80 dark:text-ebony/60 text-[10px] font-black uppercase tracking-widest">{t('common.about_years')}</p>
+
+            {/* Decorative tilted background card */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-primary/10 to-amber-400/10 dark:from-gold/10 dark:to-amber-300/10 rounded-[3rem] rotate-2 translate-x-3 translate-y-2" />
+            <div className="absolute -inset-4 border-2 border-primary/20 dark:border-gold/20 rounded-[3rem] -rotate-1 -translate-x-1" />
+
+            {/* Main image container */}
+            <div className="relative z-10 h-[650px] lg:h-[750px] rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_rgba(37,99,235,0.2)] dark:shadow-[0_40px_100px_rgba(212,175,55,0.15)]">
+              <motion.img
+                src="/new_about_image.png"
+                alt="Leadership"
+                className="w-full h-full object-cover"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              />
+              {/* Luxury gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+              {/* Gold shimmer line at top */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400 dark:via-gold to-transparent opacity-80" />
+              {/* Bottom label */}
+              <div className="absolute bottom-8 left-8 right-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-[2px] bg-amber-400 dark:bg-gold rounded-full" />
+                  <p className="text-white/90 text-xs font-black uppercase tracking-[0.3em]">Prosperity Party — Dire Dawa</p>
+                </div>
+              </div>
             </div>
+
+
+
+            {/* Small decorative dot grid */}
+            <div className="absolute -top-8 -left-8 w-24 h-24 opacity-20 dark:opacity-10 hidden lg:block"
+              style={{ backgroundImage: 'radial-gradient(circle, #2563eb 1.5px, transparent 1.5px)', backgroundSize: '10px 10px' }}
+            />
           </motion.div>
 
           <motion.div
@@ -436,11 +498,11 @@ export default function Landing() {
             </motion.div>
             <div className="md:col-span-4 grid grid-rows-2 gap-8">
                <motion.div whileHover={{ scale: 0.98 }} className="relative overflow-hidden rounded-[3rem] group">
-                  <img src="/luxury-hero.png" alt="Office" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <img src="/hero_image.png" alt="Office" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-ebony/40 group-hover:bg-transparent transition-all"></div>
                </motion.div>
                <motion.div whileHover={{ scale: 0.98 }} className="relative overflow-hidden rounded-[3rem] group">
-                  <img src="/luxury-about.png" alt="Workshop" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <img src="/new_about_image.png" alt="Workshop" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-ebony/40 group-hover:bg-transparent transition-all"></div>
                </motion.div>
             </div>
