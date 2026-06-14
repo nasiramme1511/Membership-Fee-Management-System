@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Bell, Users, ChevronRight, Award } from 'lucide-react';
+import { Calendar, Bell, Users, ChevronRight, Award, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -62,35 +62,29 @@ export default function News({ galleryImages }: NewsProps) {
     : defaultNews;
 
   return (
-    <section id="news" className="py-28 lg:py-36 bg-gray-50 dark:bg-slate-950 relative">
+    <section id="news" className="py-28 lg:py-36 bg-gray-50 dark:bg-slate-950 relative [perspective:1200px]">
       <div className="absolute top-0 right-0 w-1/4 h-full bg-gradient-to-l from-[#0B5D3B]/[0.01] to-transparent pointer-events-none"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center mb-20">
-          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            {t('landing.news_title')}
-            </span>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-              {t('landing.news_title')}
+              News & Announsment
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
-              {t('landing.stats_subtitle')}
-            </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 [transform-style:preserve-3d]">
           {newsItems.slice(0, 3).map((item, idx) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 30, rotateX: 10 }}
+              whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-[#0B5D3B]/20 transition-all duration-300 flex flex-col justify-between group"
+              whileHover={{ y: -10, rotateY: 3, z: 30 }}
+              className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-md hover:shadow-xl hover:border-[#0B5D3B]/20 transition-all duration-300 flex flex-col justify-between group [transform-style:preserve-3d]"
             >
-              <div>
+              <div className="[transform-style:preserve-3d]">
                 <div className="aspect-video relative overflow-hidden bg-gray-100 dark:bg-slate-800">
                   <img
                     src={item.image || '/pp-logo.png'}
@@ -98,7 +92,7 @@ export default function News({ galleryImages }: NewsProps) {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => { (e.target as HTMLImageElement).src = '/pp-logo.png'; }}
                   />
-                  <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-[#D4AF37] text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-[#D4AF37]/25">
+                  <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-[#D4AF37] text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-[#D4AF37]/25 [transform:translateZ(20px)]">
                     {item.category}
                   </div>
                 </div>
@@ -109,17 +103,17 @@ export default function News({ galleryImages }: NewsProps) {
                     {item.date}
                   </div>
 
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white font-outfit leading-snug group-hover:text-[#0B5D3B] dark:group-hover:text-[#D4AF37] transition-colors duration-300">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white font-outfit leading-snug group-hover:text-[#0B5D3B] dark:group-hover:text-[#D4AF37] transition-colors duration-300 [transform:translateZ(15px)]">
                     {item.title}
                   </h3>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed [transform:translateZ(10px)]">
                     {item.description}
                   </p>
                 </div>
               </div>
 
-              <div className="p-8 pt-0 mt-4">
+              <div className="p-8 pt-0 mt-4 [transform:translateZ(20px)]">
                 <button onClick={() => navigate('/login')} className="w-full py-3 border border-gray-200 dark:border-slate-800 hover:border-[#0B5D3B] dark:hover:border-[#D4AF37] text-gray-700 dark:text-gray-300 hover:text-[#0B5D3B] dark:hover:text-[#D4AF37] font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 group">
                   {t('common.read_more')}
                   <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -132,9 +126,9 @@ export default function News({ galleryImages }: NewsProps) {
         <div className="flex justify-center mt-16">
           <button
             onClick={() => navigate('/news')}
-            className="px-8 py-4 bg-[#0B5D3B] hover:bg-[#094a2f] text-white font-black rounded-xl transition-all duration-300 text-xs uppercase tracking-wider shadow-lg shadow-[#0B5D3B]/10 hover:shadow-xl"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#0B5D3B] hover:bg-[#094a2f] text-white font-black rounded-xl transition-all duration-300 text-xs uppercase tracking-wider shadow-lg shadow-[#0B5D3B]/10 hover:shadow-xl"
           >
-            {t('landing.news_title')}
+            {t('buttons.see_more')} <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

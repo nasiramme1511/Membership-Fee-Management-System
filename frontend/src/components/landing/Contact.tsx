@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface ContactProps {
@@ -41,7 +42,7 @@ export default function Contact({ content }: ContactProps) {
   ];
 
   return (
-    <section id="contact" className="py-24 md:py-32 bg-white dark:bg-slate-950 relative overflow-hidden">
+    <section id="contact" className="py-24 md:py-32 bg-white dark:bg-slate-950 relative overflow-hidden [perspective:1200px]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center mb-16">
@@ -57,17 +58,21 @@ export default function Contact({ content }: ContactProps) {
             </p>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start [transform-style:preserve-3d]">
           {/* Info Details */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -30, rotateY: 5 }}
+            whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="lg:col-span-5 space-y-8"
+            className="lg:col-span-5 space-y-8 [transform-style:preserve-3d]"
           >
             {infoItems.map((item, idx) => (
-              <div key={idx} className="flex gap-4">
+              <motion.div
+                key={idx}
+                whileHover={{ x: 10, z: 20 }}
+                className="flex gap-4 [transform-style:preserve-3d]"
+              >
                 <div className="w-12 h-12 rounded-xl bg-[#0B5D3B]/10 dark:bg-[#0B5D3B]/20 flex items-center justify-center text-[#0B5D3B] dark:text-[#D4AF37] flex-shrink-0">
                   <item.icon className="w-5 h-5" />
                 </div>
@@ -76,17 +81,18 @@ export default function Contact({ content }: ContactProps) {
                   <p className="text-base font-bold text-gray-900 dark:text-white mt-1 font-outfit">{item.line1}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{item.line2}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </motion.div>
 
           {/* Map Embed Container */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: 30, rotateY: -5 }}
+            whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="lg:col-span-7 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-4 shadow-xl overflow-hidden h-[440px] flex flex-col justify-between"
+            whileHover={{ scale: 1.02, z: 30 }}
+            className="lg:col-span-7 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-4 shadow-xl overflow-hidden h-[440px] flex flex-col justify-between [transform-style:preserve-3d]"
           >
             <div className="w-full h-full rounded-2xl overflow-hidden relative bg-gray-200 dark:bg-slate-800">
               <iframe
@@ -102,6 +108,15 @@ export default function Contact({ content }: ContactProps) {
               ></iframe>
             </div>
           </motion.div>
+        </div>
+
+        <div className="flex justify-center mt-16">
+          <Link
+            to="/contact"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#0B5D3B] hover:bg-[#094a2f] text-white font-black rounded-xl transition-all duration-300 text-xs uppercase tracking-wider shadow-lg shadow-[#0B5D3B]/10 hover:shadow-xl"
+          >
+            {t('buttons.see_more')} <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </section>

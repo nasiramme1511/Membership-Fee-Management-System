@@ -473,6 +473,7 @@
     "print": "Print",
     "save_changes": "Save Changes",
     "learn_more": "Learn More",
+    "see_more": "See More",
     "get_started": "Get Started",
     "sign_in": "Sign In",
     "sign_up": "Sign Up",
@@ -523,11 +524,11 @@
     "initializing": "Initializing secure session..."
   },
   "landing": {
-    "about_label": "Institutional Identity",
+    "about_label": "About Our Branch",
     "about_img_alt": "Prosperity Party Dire Dawa Branch Office Entrance Gate",
-    "about_fallback_desc": "Serving the Dire Dawa Administration, our branch office is dedicated to digital governance, transparency, and public accountability. We strive to automate workflows, secure collections, and serve the community with high integrity.",
+    "about_fallback_desc": "We are dedicated to fostering community development and political excellence through transparent and efficient organizational management. Our digital transformation initiative aims to streamline membership services and ensure every contribution makes an impact.",
     "about_title": "About Our Branch",
-    "about_subtitle": "Prosperity Party Branch Office",
+    "about_subtitle": "Prosperity Party Dire Dawa Branch",
     "about_description": "Serving the Dire Dawa Administration, our branch office is dedicated to digital governance, transparency, and public accountability.",
     "mission_title": "Mission Statement",
     "mission_text": "To enforce structural discipline and digital excellence, ensuring active participation and transparent membership contributions.",
