@@ -1,34 +1,17 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import api from '../lib/api'
-import Navbar from '../components/landing/Navbar';
+import api from '../lib/api';
 import Hero from '../components/landing/Hero';
 import Statistics from '../components/landing/Statistics';
-import About from '../components/landing/About';
-import Features from '../components/landing/Features';
-import SmartAdmin from '../components/landing/SmartAdmin';
-import Trust from '../components/landing/Trust';
-import Leadership from '../components/landing/Leadership';
-import Gallery from '../components/landing/Gallery';
-import News from '../components/landing/News';
-import Security from '../components/landing/Security';
-import Contact from '../components/landing/Contact';
-import CTA from '../components/landing/CTA';
-import Footer from '../components/landing/Footer';
-import ScrollToTop from '../components/landing/ScrollToTop';
+import AboutSection from '../components/landing/About';
+import FeaturesSection from '../components/landing/Features';
+import GallerySection from '../components/landing/Gallery';
+import NewsSection from '../components/landing/News';
+import ContactSection from '../components/landing/Contact';
 import PageLoader from '../components/PageLoader';
 
 export default function Landing() {
   const { t } = useTranslation();
-  const navLinks = [
-    { name: t('nav.home'), href: '#hero' },
-    { name: t('nav.about'), href: '#about' },
-    { name: t('nav.features'), href: '#features' },
-    { name: t('nav.gallery'), href: '#gallery' },
-    { name: t('nav.contact'), href: '#contact' }
-  ];
-  const [scrolled, setScrolled] = useState(false);
   const [stats, setStats] = useState({
     totalMembers: 0,
     totalPayments: 0,
@@ -39,12 +22,6 @@ export default function Landing() {
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [content, setContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,65 +50,26 @@ export default function Landing() {
     return <PageLoader />;
   }
 
-  // Identify categories for images
   const featuredImages = galleryImages.filter((i: any) => i.isFeatured);
   const heroImages = galleryImages.filter((i: any) => i.category === 'hero');
-  const leadershipImages = galleryImages.filter((i: any) => i.category === 'leadership');
-  
   const heroFeatured = featuredImages.length > 0 ? featuredImages[0] : null;
   const heroBg = heroFeatured ? heroFeatured.image : (heroImages.length > 0 ? heroImages[0].image : '/photos/building.jpg');
-  const leaderImg = leadershipImages.length > 0 ? leadershipImages[0].image : '/photos/leadership.jpg';
-  const aboutImg = '/photos/gate.jpg';
-  const ctaBg = heroBg;
+  const aboutImg = '/about1.png';
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-gray-900 dark:text-gray-150 overflow-x-hidden">
-      
-      {/* 1. STICKY NAVIGATION */}
-      <Navbar scrolled={scrolled} navLinks={navLinks} />
-
-      {/* 2. HERO SECTION (With stats overlay) */}
-      <Hero stats={stats} content={content} heroBg={heroBg} />
-
-      {/* 3. LIVE STATISTICS */}
+    <div>
+      <Hero stats={stats} content={content} heroBg={heroBg} galleryImages={galleryImages.length > 0 ? galleryImages : heroImages} />
       <Statistics stats={stats} content={content} />
 
-      {/* 4. ABOUT BRANCH */}
-      <About content={content} aboutImg={aboutImg} />
+      <AboutSection content={content} aboutImg={aboutImg} />
 
-      {/* 5. FEATURES */}
-      <Features />
+      <FeaturesSection />
 
-      {/* 6. SMART ADMINISTRATION */}
-      <SmartAdmin />
+      <GallerySection galleryImages={galleryImages} />
 
-      {/* 7. WHY TRUST THIS PLATFORM */}
-      <Trust />
+      <NewsSection galleryImages={galleryImages} />
 
-      {/* 8. LEADERSHIP MESSAGE */}
-      <Leadership content={content} leaderImg={leaderImg} />
-
-      {/* 9. EVENTS & GALLERY */}
-      <Gallery galleryImages={galleryImages} />
-
-      {/* 10. NEWS & ANNOUNCEMENTS */}
-      <News galleryImages={galleryImages} />
-
-      {/* 11. SECURITY & TRANSPARENCY */}
-      <Security />
-
-      {/* 12. DEDICATED CONTACT INFO & MAPS */}
-      <Contact content={content} />
-
-      {/* 13. CALL TO ACTION */}
-      <CTA content={content} ctaBg={ctaBg} />
-
-      {/* 14. ENTERPRISE FOOTER */}
-      <Footer content={content} />
-
-      {/* 15. FLOATING ACTION CONTROLS */}
-      <ScrollToTop />
-
+      <ContactSection content={content} />
     </div>
   );
 }

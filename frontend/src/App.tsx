@@ -13,6 +13,10 @@ import AIAssistant from './pages/AIAssistant'
 import Layout from './components/Layout'
 import PublicLayout from './components/PublicLayout'
 import Landing from './pages/Landing'
+import AboutPage from './pages/AboutPage'
+import FeaturesPage from './pages/FeaturesPage'
+import GalleryPage from './pages/GalleryPage'
+import NewsPage from './pages/NewsPage'
 import Platform from './pages/Platform'
 import Security from './pages/Security'
 import Contact from './pages/Contact'
@@ -25,8 +29,12 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
       <Route element={<PublicLayout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/news" element={<NewsPage />} />
         <Route path="/platform" element={<Platform />} />
         <Route path="/security" element={<Security />} />
         <Route path="/contact" element={<Contact />} />

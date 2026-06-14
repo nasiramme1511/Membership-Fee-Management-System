@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion as m, AnimatePresence as Ap } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface GalleryImage {
@@ -110,20 +111,13 @@ export default function Gallery({ galleryImages }: GalleryProps) {
   }, [lightboxIndex, filteredImages]);
 
   return (
-    <section id="gallery" className="py-28 lg:py-36 bg-white dark:bg-slate-950 relative">
+    <section id="gallery" className="py-28 lg:py-36 bg-white dark:bg-slate-950 relative [perspective:1200px]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.3em] text-[#0B5D3B] dark:text-[#D4AF37] mb-3">
-            <span className="w-6 h-px bg-[#0B5D3B]/50 dark:bg-[#D4AF37]/50"></span>
-            {t('landing.gallery_subtitle')}
-            </span>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight font-outfit text-gray-900 dark:text-white">
-              {t('landing.photo_gallery')}
+              Our Gallery
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 max-w-lg mx-auto">
-              {t('landing.trust_desc')}
-            </p>
         </div>
 
         {/* Filter Bar */}
@@ -134,7 +128,7 @@ export default function Gallery({ galleryImages }: GalleryProps) {
               onClick={() => setFilter(cat)}
               className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                 filter === cat
-                  ? 'bg-[#0B5D3B] text-white dark:bg-[#D4AF37] dark:text-slate-950 shadow-md'
+                  ? 'bg-[#0B5D3B] text-white dark:bg-[#D4AF37] dark:text-slate-950 shadow-md scale-105'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-900 dark:text-gray-400 dark:hover:bg-slate-800'
               }`}
             >
@@ -144,7 +138,7 @@ export default function Gallery({ galleryImages }: GalleryProps) {
         </div>
 
         {/* Masonry Grid */}
-        <div className="gallery-grid">
+        <div className="gallery-grid [transform-style:preserve-3d]">
           {filteredImages.map((img, idx) => {
             const isFeatured = idx === 0 || idx === 3;
             return (
@@ -152,11 +146,12 @@ export default function Gallery({ galleryImages }: GalleryProps) {
                 key={img.id}
                 layoutId={`img-${img.id}`}
                 onClick={() => openLightbox(idx)}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.85, rotateY: 10 }}
+                whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className={`group relative rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 bg-gray-100 dark:bg-slate-900 ${
+                transition={{ duration: 0.5, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.03, rotateY: -3, z: 20 }}
+                className={`group relative rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 bg-gray-100 dark:bg-slate-900 [transform-style:preserve-3d] ${
                   isFeatured ? 'gallery-grid-item-featured' : ''
                 }`}
               >
@@ -185,6 +180,15 @@ export default function Gallery({ galleryImages }: GalleryProps) {
               </m.div>
             );
           })}
+        </div>
+
+        <div className="flex justify-center mt-16">
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#0B5D3B] hover:bg-[#094a2f] text-white font-black rounded-xl transition-all duration-300 text-xs uppercase tracking-wider shadow-lg shadow-[#0B5D3B]/10 hover:shadow-xl"
+          >
+            {t('buttons.see_more')} <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
 
