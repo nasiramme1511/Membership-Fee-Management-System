@@ -13,23 +13,23 @@ import LanguageSwitcher from '../components/LanguageSwitcher'
 const Preloader = () => {
   const { t } = useTranslation()
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0e1a] flex flex-col items-center justify-center gap-10">
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center gap-10">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FFD700]/5 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="relative flex items-center justify-center">
-        <div className="absolute w-44 h-44 border border-[#FFD700]/20 rounded-full animate-[ping_3s_ease-in-out_infinite]"></div>
-        <div className="absolute w-36 h-36 border border-[#FFD700]/10 rounded-full"></div>
-        <div className="w-28 h-28 border-2 border-[#FFD700]/15 rounded-full"></div>
+        <div className="absolute w-44 h-44 border border-[#D4AF37]/30 rounded-full animate-[ping_3s_ease-in-out_infinite]"></div>
+        <div className="absolute w-36 h-36 border border-[#D4AF37]/20 rounded-full"></div>
+        <div className="w-28 h-28 border-2 border-[#D4AF37]/20 rounded-full"></div>
         <div className="absolute inset-0 w-28 h-28 border-2 border-transparent border-t-[#FFD700] border-r-[#D4AF37]/50 rounded-full animate-spin"></div>
-        <img src="/pp-logo.png" alt="" className="absolute w-14 h-14 object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.4)]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
+        <img src="/pp-logo.png" alt="" className="absolute w-14 h-14 object-contain drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
       </div>
       <div className="text-center space-y-3 animate-in fade-in duration-1000">
-        <h2 className="font-black tracking-[0.4em] uppercase text-xs bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] via-[#FFF8DC] to-[#D4AF37]">
+        <h2 className="font-black tracking-[0.4em] uppercase text-xs bg-clip-text text-transparent bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B]">
           {t('common.prosperity_party')}
         </h2>
-        <p className="text-[#FFD700] text-[10px] font-bold uppercase tracking-[0.5em] opacity-80">
+        <p className="text-[#B8860B] text-[10px] font-bold uppercase tracking-[0.5em] opacity-80">
           {t('common.initializing_session')}
         </p>
-        <div className="w-48 h-[2px] bg-white/5 rounded-full mx-auto mt-4 overflow-hidden">
+        <div className="w-48 h-[2px] bg-[#D4AF37]/10 rounded-full mx-auto mt-4 overflow-hidden">
           <div className="h-full w-1/2 bg-gradient-to-r from-transparent via-[#FFD700] to-transparent rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
