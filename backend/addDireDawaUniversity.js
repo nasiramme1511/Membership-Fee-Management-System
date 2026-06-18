@@ -9,9 +9,9 @@ async function migrate() {
   try {
     await connectDB();
 
-    const existing = await SectorUnit.findOne({ where: { name: 'Transport and Logistics Authority' } });
+    const existing = await SectorUnit.findOne({ where: { name: 'Dire Dawa University' } });
     if (existing) {
-      console.log('Transport and Logistics Authority already exists (id=' + existing.id + '). Nothing to do.');
+      console.log('Dire Dawa University already exists (id=' + existing.id + '). Nothing to do.');
       process.exit(0);
     }
 
@@ -32,12 +32,12 @@ async function migrate() {
       console.warn('Warning: Only found ' + catIds.length + '/' + catNames.length + ' expected categories');
     }
 
-    const unit = await SectorUnit.create({ name: 'Transport and Logistics Authority', sectorTypeId: instType.id, parentId: null });
+    const unit = await SectorUnit.create({ name: 'Dire Dawa University', sectorTypeId: instType.id, parentId: null });
     for (const catId of catIds) {
       await SectorUnitCategory.create({ sectorUnitId: unit.id, memberCategoryId: catId });
     }
 
-    console.log('✅ Transport and Logistics Authority sector unit created (id=' + unit.id + ')');
+    console.log('✅ Dire Dawa University sector unit created (id=' + unit.id + ')');
     process.exit(0);
   } catch (err) {
     console.error('Migration failed:', err);

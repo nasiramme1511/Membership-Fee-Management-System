@@ -66,7 +66,8 @@ const INSTITUTIONS = [
   ['Health Bureau', null],
   ['City Manager Office', null],
   ['Water and Sewerage Authority', null],
-  ['Transport and Logistics', null],
+  ['Transport and Logistics Authority', null],
+  ['Dire Dawa University', null],
 ];
 
 // ─── Urban Woredas ─────────────────────────────────────────────────────────────

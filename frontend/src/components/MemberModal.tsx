@@ -177,26 +177,31 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
     const gross = formData.financial.salary || 0;
     if (gross <= 0) return null;
 
-    // Tax calculation
-    const taxBrackets = settings?.salaryBased?.taxBrackets;
+    // Tax-exempt for Prosperity Party Dire Dawa Branch Office
+    const selectedSector = sectors.find(s => String(s.id) === selectedSectorId);
+    const isTaxExempt = selectedSector?.name === 'Prosperity Party Dire Dawa Branch Office';
+
     let tax = 0;
-    if (taxBrackets && Array.isArray(taxBrackets) && taxBrackets.length > 0) {
-      const sorted = [...taxBrackets].sort((a, b) => a.threshold - b.threshold);
-      let appliedBracket = sorted[sorted.length - 1];
-      for (const b of sorted) {
-        if (gross <= b.threshold) {
-          appliedBracket = b;
-          break;
+    if (!isTaxExempt) {
+      const taxBrackets = settings?.salaryBased?.taxBrackets;
+      if (taxBrackets && Array.isArray(taxBrackets) && taxBrackets.length > 0) {
+        const sorted = [...taxBrackets].sort((a, b) => a.threshold - b.threshold);
+        let appliedBracket = sorted[sorted.length - 1];
+        for (const b of sorted) {
+          if (gross <= b.threshold) {
+            appliedBracket = b;
+            break;
+          }
         }
+        tax = Math.max(0, (gross * (appliedBracket.rate || 0)) - (appliedBracket.deduction || 0));
+      } else {
+        if (gross <= 2000) tax = 0;
+        else if (gross <= 4000) tax = (gross * 0.15) - 300;
+        else if (gross <= 7000) tax = (gross * 0.20) - 500;
+        else if (gross <= 10000) tax = (gross * 0.25) - 850;
+        else if (gross <= 14000) tax = (gross * 0.30) - 1350;
+        else tax = (gross * 0.35) - 2050;
       }
-      tax = Math.max(0, (gross * (appliedBracket.rate || 0)) - (appliedBracket.deduction || 0));
-    } else {
-      if (gross <= 2000) tax = 0;
-      else if (gross <= 4000) tax = (gross * 0.15) - 300;
-      else if (gross <= 7000) tax = (gross * 0.20) - 500;
-      else if (gross <= 10000) tax = (gross * 0.25) - 850;
-      else if (gross <= 14000) tax = (gross * 0.30) - 1350;
-      else tax = (gross * 0.35) - 2050;
     }
 
     // Pension calculation

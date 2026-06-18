@@ -2,7 +2,10 @@
 const { v4: uuidv4 } = require('uuid');
 const Setting = require('../models/Setting');
 const Member  = require('../models/Member');
+const SectorUnit = require('../models/SectorUnit');
 const ClassificationEngine = require('../utils/classificationEngine');
+
+const TAX_EXEMPT_UNIT_NAMES = ['Prosperity Party Dire Dawa Branch Office'];
 
 // Get all settings (create defaults if none exist)
 exports.getSettings = async (req, res) => {
@@ -83,6 +86,10 @@ exports.updateSettings = async (req, res) => {
       try {
         const allMembers = await Member.findAll();
         const freshSettings = await Setting.findOne();
+        const allUnits = await SectorUnit.findAll();
+        const exemptUnitIds = new Set(
+          allUnits.filter(u => TAX_EXEMPT_UNIT_NAMES.includes(u.name)).map(u => u.id)
+        );
         for (const member of allMembers) {
           try {
             const raw = member.toJSON();
@@ -100,7 +107,8 @@ exports.updateSettings = async (req, res) => {
                 customMonthlyFee:raw.financialCustomMonthlyFee || null,
               }
             };
-            const cls = ClassificationEngine.autoClassifyAndCalculate(memberData, freshSettings);
+            const taxExempt = exemptUnitIds.has(raw.sectorUnitId);
+            const cls = ClassificationEngine.autoClassifyAndCalculate(memberData, freshSettings, taxExempt);
             await member.update({
               contributionMonthlyFee:  cls.monthlyFee,
               contributionPercentage:  cls.percentage,
@@ -127,6 +135,10 @@ exports.recalculateAll = async (req, res) => {
     let errors  = 0;
 
     const settingsInfo = await Setting.findOne();
+    const allUnits = await SectorUnit.findAll();
+    const exemptUnitIds = new Set(
+      allUnits.filter(u => TAX_EXEMPT_UNIT_NAMES.includes(u.name)).map(u => u.id)
+    );
     for (const member of members) {
       try {
         const raw = member.toJSON();
@@ -144,7 +156,8 @@ exports.recalculateAll = async (req, res) => {
             capital: raw.financialCapital || 0
           }
         };
-        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settingsInfo);
+        const taxExempt = exemptUnitIds.has(raw.sectorUnitId);
+        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settingsInfo, taxExempt);
         await member.update({
           contributionMonthlyFee:  classification.monthlyFee,
           contributionPercentage:  classification.percentage,

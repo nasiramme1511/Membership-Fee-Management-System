@@ -296,7 +296,10 @@ exports.importMembers = async (req, res) => {
           memberData.financial.salary = 0;
         }
 
-        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings);
+        const TAX_EXEMPT_UNIT_NAMES = ['Prosperity Party Dire Dawa Branch Office'];
+        const exemptUnit = sectorUnitId ? await SectorUnit.findByPk(sectorUnitId) : null;
+        const taxExempt = exemptUnit && TAX_EXEMPT_UNIT_NAMES.includes(exemptUnit.name);
+        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings, taxExempt);
 
         const manualPercentage = Number(row['Contribution %'] || row.ContributionPercentage || row['የክፍያ % መጠን']);
         const manualMonthlyFee = Number(row['Monthly Contribution (ETB)'] || row.MonthlyContribution || row['የአባሉ ወርሃዊ ክፍያ']);
