@@ -1,4 +1,14 @@
-const sharp = require('../../backend/node_modules/sharp');
+let sharp;
+try {
+  sharp = require('sharp');
+} catch {
+  try {
+    sharp = require('../../backend/node_modules/sharp');
+  } catch {
+    console.log('sharp not installed, skipping icon generation (committed icons will be used)');
+    process.exit(0);
+  }
+}
 const fs = require('fs');
 const path = require('path');
 
