@@ -184,15 +184,37 @@ if (isProduction) {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
 
   if (fs.existsSync(frontendDist)) {
-    // Serve static assets (JS, CSS, images)
+    // Serve service-worker.js with no-cache for PWA updates
+    app.get('/service-worker.js', (req, res) => {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(path.join(frontendDist, 'service-worker.js'));
+    });
+
+    // Serve manifest.json
+    app.get('/manifest.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/manifest+json');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.sendFile(path.join(frontendDist, 'manifest.json'));
+    });
+
+    // Serve static assets (JS, CSS, images) - short cache for JS/CSS (PWA updates)
     app.use(express.static(frontendDist, {
-      maxAge: '1d',         // Cache static assets for 1 day
-      etag: true
+      maxAge: '1d',
+      etag: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+        if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.webp')) {
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+      }
     }));
 
     // SPA Fallback: Any route NOT starting with /api → serve index.html
-    // This supports React Router client-side routing
     app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(frontendDist, 'index.html'));
     });
 
@@ -200,7 +222,6 @@ if (isProduction) {
   } else {
     console.error('❌ Frontend dist not found at:', frontendDist);
     console.error('   Ensure npm run build completed successfully');
-    // Fallback response for root in case dist is missing
     app.get('*', (req, res) => {
       res.status(503).send('Frontend build not found. Please check deployment logs.');
     });

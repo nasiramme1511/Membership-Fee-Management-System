@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, Link, useLocation, useHref } from 'react-router-dom';
+import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Mail, Phone, Languages, Shield, Globe, Sun, Moon } from 'lucide-react';
+import { Menu, X, Mail, Phone, Languages, Shield, Globe, Sun, Moon, Download, Smartphone, Monitor } from 'lucide-react';
 import { getEthiopianYear } from '../utils/ethiopianCalendar';
 import LanguageSwitcher from './LanguageSwitcher';
+import InstallAppButton from './InstallAppButton';
 
 export default function PublicLayout() {
   const { t, i18n } = useTranslation();
@@ -240,6 +241,39 @@ export default function PublicLayout() {
             </div>
           </div>
           
+          <div className="pt-8 pb-8 border-t border-white/10 mb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h4 className="text-white font-black text-sm uppercase tracking-[0.3em] mb-2">{t('landing.get_our_app') || 'Get Our App'}</h4>
+                <p className="text-[11px] text-white/60">Install for the best experience on any device</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <InstallAppButton />
+                <a
+                  href="#"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Android
+                </a>
+                <a
+                  href="#"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95"
+                >
+                  <Monitor className="w-4 h-4" />
+                  Windows
+                </a>
+                <a
+                  href="#"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  macOS
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8">
             <p className="text-[10px] text-white/60 font-black uppercase tracking-[0.4em]">
               &copy; {getEthiopianYear()} Prosperity Party Dire Dawa Branch &bull; Developed by High-End Digital Team
