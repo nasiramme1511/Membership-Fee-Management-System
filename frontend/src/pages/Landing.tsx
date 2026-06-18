@@ -53,7 +53,7 @@ export default function Landing() {
   const featuredImages = galleryImages.filter((i: any) => i.isFeatured);
   const heroImages = galleryImages.filter((i: any) => i.category === 'hero');
   const heroFeatured = featuredImages.length > 0 ? featuredImages[0] : null;
-  const heroBg = heroFeatured ? heroFeatured.image : (heroImages.length > 0 ? heroImages[0].image : '/photos/building.jpg');
+  const heroBg = heroFeatured ? heroFeatured.image : (heroImages.length > 0 ? heroImages[0].image : '/photos/leadership.jpg');
   const aboutImg = '/about1.png';
 
   return (

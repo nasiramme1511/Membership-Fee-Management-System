@@ -359,10 +359,10 @@ class ClassificationEngine {
   /**
    * Calculate Net Salary after all deductions
    */
-  static calculateNetSalary(salary, rules = null) {
+  static calculateNetSalary(salary, rules = null, taxExempt = false) {
     const grossSalary = salary;
     const pensionDeduction = this.calculatePension(salary, rules);
-    const taxDeduction = this.calculateIncomeTax(salary, rules);
+    const taxDeduction = taxExempt ? 0 : this.calculateIncomeTax(salary, rules);
     const totalDeductions = pensionDeduction + taxDeduction;
     const netSalary = Math.max(0, grossSalary - totalDeductions);
 
@@ -378,7 +378,7 @@ class ClassificationEngine {
   /**
    * Auto-classify and calculate for a member
    */
-  static autoClassifyAndCalculate(memberData, settings = null) {
+  static autoClassifyAndCalculate(memberData, settings = null, taxExempt = false) {
     const classification = this.classifyMember(memberData, settings);
     
     // Sub-Articles 10 & 11: Member may voluntarily pay more than standard fee
@@ -393,7 +393,7 @@ class ClassificationEngine {
     }
 
     const salary = memberData.financial?.salary || 0;
-    const netSalaryData = this.calculateNetSalary(salary, settings);
+    const netSalaryData = this.calculateNetSalary(salary, settings, taxExempt);
     
     // Manual overrides for deductions if provided
     if (memberData.manualFinancial) {

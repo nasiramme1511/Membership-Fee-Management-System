@@ -10,6 +10,15 @@ const ClassificationEngine = require('../utils/classificationEngine');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 const { createAuditLog } = require('../utils/auditLogger');
 
+// ─── Tax-exempt sector units (e.g., Prosperity Party) ───────────────────────────
+const TAX_EXEMPT_UNIT_NAMES = ['Prosperity Party Dire Dawa Branch Office'];
+
+async function isTaxExemptSector(sectorUnitId) {
+  if (!sectorUnitId) return false;
+  const unit = await require('../models/SectorUnit').findByPk(sectorUnitId);
+  return unit && TAX_EXEMPT_UNIT_NAMES.includes(unit.name);
+}
+
 // ─── Helper: flatten nested member data → flat DB columns ────────────────────
 function flattenMemberData(data) {
   const flat = { ...data };
@@ -88,7 +97,8 @@ exports.createMember = async (req, res) => {
     let settings = await Setting.findOne();
     if (!settings) settings = await Setting.create({});
     
-    const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings);
+    const taxExempt = await isTaxExemptSector(memberData.sectorUnitId);
+    const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings, taxExempt);
 
     const currentYear = getEthiopianYear();
     const paymentDay  = memberData.paymentDay || 1;
@@ -301,7 +311,8 @@ exports.updateMember = async (req, res) => {
       let settings = await Setting.findOne();
       if (!settings) settings = await Setting.create({});
       
-      const classification = ClassificationEngine.autoClassifyAndCalculate(req.body, settings);
+      const taxExempt = await isTaxExemptSector(req.body.sectorUnitId || member.sectorUnitId);
+      const classification = ClassificationEngine.autoClassifyAndCalculate(req.body, settings, taxExempt);
       updateData.subType              = classification.subType;
       updateData.classificationRuleId = classification.classificationRuleId;
       updateData.cluster              = classification.cluster || req.body.cluster || 'N/A';
@@ -394,7 +405,8 @@ exports.bulkCreateMembers = async (req, res) => {
     for (let i = 0; i < members.length; i++) {
       try {
         const memberData = members[i];
-        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData);
+        const taxExempt = await isTaxExemptSector(memberData.sectorUnitId);
+        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, null, taxExempt);
         const currentYear = getEthiopianYear();
         const paymentSchedule = generatePaymentSchedule(currentYear, memberData.paymentDay || 1);
 
@@ -492,7 +504,8 @@ exports.bulkAppendMembers = async (req, res) => {
           memberData.phone = `NOPHONE-${Date.now()}-${i}-${Math.floor(Math.random() * 100000)}`;
         }
         
-        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings);
+        const taxExempt = await isTaxExemptSector(memberData.sectorUnitId);
+        const classification = ClassificationEngine.autoClassifyAndCalculate(memberData, settings, taxExempt);
         const currentYear = getEthiopianYear();
         const paymentDay  = memberData.paymentDay || 1;
         const paymentSchedule = generatePaymentSchedule(currentYear, paymentDay);
