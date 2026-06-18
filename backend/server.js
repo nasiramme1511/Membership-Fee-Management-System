@@ -33,7 +33,7 @@ const app = express();
 app.use(cors({
   origin: isProduction
     ? true   // Accept all (same-origin anyway)
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://membership-fee-management-system.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
