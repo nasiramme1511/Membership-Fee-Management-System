@@ -1,5 +1,6 @@
-import { Globe, MapPin, Phone, Mail, Clock, Layers, ShieldCheck, CheckCircle2, ChevronRight, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { Globe, MapPin, Phone, Mail, Clock, Layers, ShieldCheck, CheckCircle2, ChevronRight, Twitter, Linkedin, Instagram, Download, Smartphone, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import InstallAppButton from '../InstallAppButton';
 
 interface FooterProps {
   content: Record<string, string>;
@@ -115,6 +116,28 @@ export default function Footer({ content }: FooterProps) {
                 </div>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Get Our App */}
+        <div className="pb-8 mb-8 border-b border-slate-900">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h4 className="text-white font-black text-sm uppercase tracking-[0.3em] mb-2">Get Our App</h4>
+              <p className="text-[10px] text-gray-500">Install for the best experience on any device</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <InstallAppButton />
+              <a href="#" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95">
+                <Smartphone className="w-4 h-4" /> Android
+              </a>
+              <a href="#" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95">
+                <Monitor className="w-4 h-4" /> Windows
+              </a>
+              <a href="#" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300 active:scale-95">
+                <Download className="w-4 h-4" /> macOS
+              </a>
+            </div>
           </div>
         </div>
 

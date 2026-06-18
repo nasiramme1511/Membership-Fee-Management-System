@@ -20,44 +20,66 @@ import NewsPage from './pages/NewsPage'
 import Platform from './pages/Platform'
 import Security from './pages/Security'
 import Contact from './pages/Contact'
+import Offline from './pages/Offline'
+import UpdatePrompt from './components/UpdatePrompt'
+import useServiceWorker from './hooks/useServiceWorker'
+import useOnlineStatus from './hooks/useOnlineStatus'
+import { useEffect } from 'react'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   return user ? <>{children}</> : <Navigate to="/login" />
 }
 
-function AppRoutes() {
+function AppContent() {
+  const { updateAvailable, applyUpdate } = useServiceWorker()
+  const { isOffline } = useOnlineStatus()
+
+  useEffect(() => {
+    if (isOffline) {
+      document.documentElement.classList.add('is-offline')
+    } else {
+      document.documentElement.classList.remove('is-offline')
+    }
+  }, [isOffline])
+
   return (
-    <Routes>
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/gallery" element={<GalleryPage />} />
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/platform" element={<Platform />} />
-        <Route path="/security" element={<Security />} />
-        <Route path="/contact" element={<Contact />} />
-      </Route>
-      <Route path="/login" element={<Login />} />
-      <Route
-        element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }
-      >
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="members" element={<Members />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="settings/landing-page" element={<LandingPageManager />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="ai-assistant" element={<AIAssistant />} />
-      </Route>
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/offline" element={<Offline />} />
+
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/platform" element={<Platform />} />
+          <Route path="/security" element={<Security />} />
+          <Route path="/contact" element={<Contact />} />
+        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route
+          element={
+            <PrivateRoute>
+              <Layout />
+            </PrivateRoute>
+          }
+        >
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="members" element={<Members />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="settings/landing-page" element={<LandingPageManager />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="ai-assistant" element={<AIAssistant />} />
+        </Route>
+      </Routes>
+
+      <UpdatePrompt updateAvailable={updateAvailable} onUpdate={applyUpdate} />
+    </>
   )
 }
 
@@ -65,7 +87,7 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <AppContent />
       </AuthProvider>
     </Router>
   )

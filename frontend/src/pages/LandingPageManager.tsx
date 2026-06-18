@@ -930,26 +930,26 @@ export default function LandingPageManager() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Title</label>
                   <input type="text" value={editingImage.title}
-                    onChange={e => setEditingImage(f => ({ ...f, title: e.target.value }))}
+                    onChange={e => setEditingImage(f => ({ ...f!, title: e.target.value } as LandingImage))}
                     className="input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Alt Text</label>
                   <input type="text" value={editingImage.altText}
-                    onChange={e => setEditingImage(f => ({ ...f, altText: e.target.value }))}
+                    onChange={e => setEditingImage(f => ({ ...f!, altText: e.target.value } as LandingImage))}
                     className="input" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Description</label>
                   <textarea value={editingImage.description}
-                    onChange={e => setEditingImage(f => ({ ...f, description: e.target.value }))}
+                    onChange={e => setEditingImage(f => ({ ...f!, description: e.target.value } as LandingImage))}
                     className="input" rows={3} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Category</label>
                     <select value={editingImage.category}
-                      onChange={e => setEditingImage(f => ({ ...f, category: e.target.value }))}
+                      onChange={e => setEditingImage(f => ({ ...f!, category: e.target.value } as LandingImage))}
                       className="input">
                       {IMAGE_CATEGORIES.map(cat => (
                         <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -959,7 +959,7 @@ export default function LandingPageManager() {
                   <div>
                     <label className="block text-sm font-medium mb-1">Language</label>
                     <select value={editingImage.language}
-                      onChange={e => setEditingImage(f => ({ ...f, language: e.target.value }))}
+                      onChange={e => setEditingImage(f => ({ ...f!, language: e.target.value } as LandingImage))}
                       className="input">
                       {LANGUAGES.map(l => (
                         <option key={l.value} value={l.value}>{l.label}</option>
@@ -969,7 +969,7 @@ export default function LandingPageManager() {
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={editingImage.isFeatured}
-                    onChange={e => setEditingImage(f => ({ ...f, isFeatured: e.target.checked }))}
+                    onChange={e => setEditingImage(f => ({ ...f!, isFeatured: e.target.checked } as LandingImage))}
                     className="rounded text-amber-500 focus:ring-amber-500" />
                   <span className="text-sm font-medium flex items-center gap-1.5">
                     <Star className="w-4 h-4 text-amber-500" />

@@ -23,8 +23,7 @@ i18n
     detection: {
       order: ['localStorage', 'cookie'],
       caches: ['localStorage', 'cookie'],
-      lookupLocalStorage: 'i18nextLng',
-      checkWhitelist: true
+      lookupLocalStorage: 'i18nextLng'
     },
     interpolation: {
       escapeValue: false
