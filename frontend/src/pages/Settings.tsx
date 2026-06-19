@@ -469,7 +469,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.business_fees')}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Resident Young/women wing members</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { key: 'farmer',         label: 'Art.8a Farmer/Pastoral (Birr/month)' },
