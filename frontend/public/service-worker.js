@@ -70,7 +70,7 @@ async function getCachedOfflinePage() {
   return cache.match(OFFLINE_URL);
 }
 
-async function networkFirstWithTimeout(request, timeoutMs = 5000) {
+async function networkFirstWithTimeout(event, request, timeoutMs = 5000) {
   const timeoutPromise = new Promise((_, reject) =>
     setTimeout(() => reject(new Error('Network timeout')), timeoutMs)
   );
@@ -100,7 +100,7 @@ async function networkFirstWithTimeout(request, timeoutMs = 5000) {
   }
 }
 
-async function cacheFirst(request) {
+async function cacheFirst(event, request) {
   const cached = await caches.match(request);
   if (cached) return cached;
 
@@ -121,7 +121,7 @@ async function cacheFirst(request) {
   }
 }
 
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(event, request) {
   const cache = await caches.open(DYNAMIC_CACHE);
   const cached = await cache.match(request);
   if (cached) {
@@ -149,7 +149,7 @@ async function staleWhileRevalidate(request) {
   }
 }
 
-async function imageCacheFirst(request) {
+async function imageCacheFirst(event, request) {
   const cache = await caches.open(ASSET_CACHE);
   const cached = await cache.match(request);
 
@@ -212,17 +212,17 @@ self.addEventListener('fetch', (event) => {
 
   switch (strategy) {
     case 'network-first':
-      event.respondWith(networkFirstWithTimeout(request));
+      event.respondWith(networkFirstWithTimeout(event, request));
       break;
     case 'cache-first':
-      event.respondWith(cacheFirst(request));
+      event.respondWith(cacheFirst(event, request));
       break;
     case 'image-cache-first':
-      event.respondWith(imageCacheFirst(request));
+      event.respondWith(imageCacheFirst(event, request));
       break;
     case 'stale-while-revalidate':
     default:
-      event.respondWith(staleWhileRevalidate(request));
+      event.respondWith(staleWhileRevalidate(event, request));
       break;
   }
 });

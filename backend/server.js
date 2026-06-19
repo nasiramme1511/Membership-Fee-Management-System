@@ -198,6 +198,11 @@ if (isProduction) {
       res.sendFile(path.join(frontendDist, 'manifest.json'));
     });
 
+    // Offline page for service worker
+    app.get('/offline', (req, res) => {
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+
     // Serve static assets (JS, CSS, images) - short cache for JS/CSS (PWA updates)
     app.use(express.static(frontendDist, {
       maxAge: '1d',
