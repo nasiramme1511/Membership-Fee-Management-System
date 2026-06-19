@@ -57,7 +57,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   }
 
   useEffect(() => {
-    api.get('/settings').then(res => setSettings(res.data)).catch(console.error);
+    api.get('/settings').then(res => setSettings(res.data.data)).catch(console.error);
     if (userRole === 'sector_officer' && userSectorUnitId) {
       setSelectedSectorId(String(userSectorUnitId));
     }
@@ -117,33 +117,46 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
 
     // Specialized Tiers
     if (catName.includes('wing')) {
+      const wingSettings = currentSettings?.contributionRules?.wing || {};
       const isEmployeeWing = catName.includes('employee');
       if (gross >= 1000 && isEmployeeWing) {
-        if (gross <= 3000) monthlyFee = 2;
-        else if (gross <= 5000) monthlyFee = 5;
-        else if (gross <= 10000) monthlyFee = 10;
-        else monthlyFee = 20;
+        if (gross <= 3000) monthlyFee = wingSettings.salary_1k_3k ?? 2;
+        else if (gross <= 5000) monthlyFee = wingSettings.salary_3k_5k ?? 5;
+        else if (gross <= 10000) monthlyFee = wingSettings.salary_5k_10k ?? 10;
+        else monthlyFee = wingSettings.salary_10k_plus ?? 20;
       } else if (gross > 0) {
-        monthlyFee = 1;
+        monthlyFee = wingSettings.farmer ?? 1;
       } else if (isEmployeeWing) {
-        monthlyFee = 2;
+        monthlyFee = wingSettings.salary_1k_3k ?? 2;
       } else {
-        monthlyFee = 1;
+        monthlyFee = wingSettings.farmer ?? 1;
       }
     } else if (catName.includes('enterprise') || catName.includes('business')) {
+      const biz = currentSettings?.contributionRules?.business || {};
       const type = salaryStr.toLowerCase();
-      if (type.includes('micro') || (gross > 0 && gross <= 50000)) monthlyFee = 5;
-      else if (type.includes('small') || (gross > 50000 && gross <= 250000)) monthlyFee = 10;
-      else if (type.includes('medium') || gross > 250000) monthlyFee = 20;
-      else monthlyFee = 5;
+      if (type.includes('micro') || (gross > 0 && gross <= 50000)) monthlyFee = biz.micro ?? 5;
+      else if (type.includes('small') || (gross > 50000 && gross <= 250000)) monthlyFee = biz.small ?? 10;
+      else if (type.includes('medium') || gross > 250000) monthlyFee = biz.medium ?? 20;
+      else monthlyFee = biz.micro ?? 5;
     } else if (catName.includes('investor')) {
-      if (gross <= 5000000) monthlyFee = 500;
-      else if (gross <= 10000000) monthlyFee = 1000;
-      else monthlyFee = 2000;
+      const invRules = currentSettings?.contributionRules?.investor || [];
+      if (invRules.length > 0) {
+        for (const rule of invRules) {
+          if (gross >= rule.minCapital && gross <= rule.maxCapital) {
+            monthlyFee = rule.fee;
+            break;
+          }
+        }
+        if (!monthlyFee) monthlyFee = invRules[invRules.length - 1].fee;
+      } else {
+        if (gross <= 5000000) monthlyFee = 500;
+        else if (gross <= 10000000) monthlyFee = 1000;
+        else monthlyFee = 2000;
+      }
     } else if (catName.includes('student')) {
-      monthlyFee = 1;
+      monthlyFee = currentSettings?.contributionRules?.fixedFees?.student ?? 1;
     } else if (catName.includes('resident') || catName.includes('farmer')) {
-      monthlyFee = 5;
+      monthlyFee = currentSettings?.contributionRules?.fixedFees?.farmer ?? 5;
     } else {
       if (gross <= 0) return { tax: 0, pension: 0, netSalary: 0, percentage: 0, monthlyFee: 0 };
 

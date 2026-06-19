@@ -67,7 +67,7 @@ const Member = sequelize.define('Member', {
   financialCustomMonthlyFee:{ type: DataTypes.DECIMAL(15, 2), allowNull: true },
 
   // ── Wing ────────────────────────────────────────────────────────────────────
-  wingType:           { type: DataTypes.ENUM('Women', 'Youth'), allowNull: true },
+  wingType:           { type: DataTypes.STRING(100), allowNull: true },
   wingParentMemberId: { type: DataTypes.STRING(50), allowNull: true },
 
   // ── Membership Details ──────────────────────────────────────────────────────

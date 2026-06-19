@@ -97,6 +97,7 @@ exports.updateSettings = async (req, res) => {
               membershipType: raw.membershipType,
               sector: raw.sector,
               branch: raw.branch,
+              wing: raw.wing,
               financial: {
                 salary:          raw.financialSalary          || 0,
                 employmentType:  raw.financialEmploymentType  || 'Private',
@@ -147,13 +148,15 @@ exports.recalculateAll = async (req, res) => {
           sector: raw.sector,
           branch: raw.branch,
           subType: raw.subType,
+          wing: raw.wing,
           financial: {
             salary: raw.financialSalary || 0,
             employmentType: raw.financialEmploymentType || 'Private',
             occupationType: raw.financialOccupationType || 'Informal',
             income: raw.financialIncome || 0,
             employees: raw.financialEmployees || 0,
-            capital: raw.financialCapital || 0
+            capital: raw.financialCapital || 0,
+            customMonthlyFee: raw.financialCustomMonthlyFee || null
           }
         };
         const taxExempt = exemptUnitIds.has(raw.sectorUnitId);

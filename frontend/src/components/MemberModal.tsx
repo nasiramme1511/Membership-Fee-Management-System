@@ -124,7 +124,7 @@ export default function MemberModal({ member, onClose, onSuccess, userRole, user
 
   useEffect(() => {
     api.get('/sector-types').then(res => setSectorTypes(res.data))
-    api.get('/settings').then(res => setSettings(res.data)).catch(console.error)
+    api.get('/settings').then(res => setSettings(res.data.data)).catch(console.error)
   }, [])
 
   useEffect(() => {
