@@ -4,7 +4,7 @@ services:
     name: mfc-pp-dd-branch-app
     env: node
     plan: free
-    buildCommand: npm install --prefix frontend && node frontend/scripts/generate-icons.cjs; npm run build --prefix frontend && cp frontend/public/manifest.json frontend/dist/manifest.json && cp frontend/public/service-worker.js frontend/dist/service-worker.js && cp -r frontend/public/icons frontend/dist/icons && npm install --prefix backend
+    buildCommand: bash build.sh
     startCommand: npm start
     envVars:
       - key: NODE_ENV
