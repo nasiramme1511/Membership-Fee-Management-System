@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `mfms-static-${CACHE_VERSION}`;
 const API_CACHE = `mfms-api-${CACHE_VERSION}`;
 const ASSET_CACHE = `mfms-assets-${CACHE_VERSION}`;
@@ -28,7 +28,13 @@ const MAX_AGE_DAYS = 30;
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => {
+        return Promise.allSettled(
+          PRECACHE_URLS.map((url) =>
+            cache.add(url).catch(() => console.warn(`[SW] Failed to precache: ${url}`))
+          )
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -136,7 +142,10 @@ async function staleWhileRevalidate(request) {
     }
     return response;
   } catch {
-    return new Response(null, { status: 503, statusText: 'Service Unavailable' });
+    const staticCache = await caches.open(STATIC_CACHE);
+    const offlinePage = await staticCache.match('/');
+    if (offlinePage) return offlinePage;
+    return fetch(request);
   }
 }
 
