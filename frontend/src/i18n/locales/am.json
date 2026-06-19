@@ -410,7 +410,8 @@
     "branch": "Branch",
     "current_month": "የአሁኑ ወር",
     "current_year": "የአሁኑ አመት",
-    "download_pdf": "Download PDF"
+    "download_pdf": "Download PDF",
+    "your_sector_auto_assigned": "የእርስዎ ዘርፍ እና ክፍል በራስ-ሰር ተመድቧል። እባክዎ ምድብ ይምረጡ።"
   },
   "nav": {
     "home": "መነሻ",

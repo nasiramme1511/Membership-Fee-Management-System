@@ -405,7 +405,8 @@
     "collection_rate": "Collection Rate",
     "current_month": "Current Month",
     "current_year": "Current Year",
-    "download_pdf": "Download PDF"
+    "download_pdf": "Download PDF",
+    "your_sector_auto_assigned": "Your sector and unit are automatically assigned based on your account. Please select a category."
   },
   "nav": {
     "home": "Home",

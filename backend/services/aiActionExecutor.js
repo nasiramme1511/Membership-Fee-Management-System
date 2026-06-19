@@ -337,7 +337,7 @@ Do NOT include any text outside the JSON object.`
       delete flat.netSalary;
     }
     if (data.wing) {
-      flat.wingType = (data.wing.wingType && ['Women', 'Youth'].includes(data.wing.wingType)) ? data.wing.wingType : null;
+      flat.wingType = data.wing.wingType || null;
       flat.wingParentMemberId = data.wing.parentMemberId ?? null;
       delete flat.wing;
     }

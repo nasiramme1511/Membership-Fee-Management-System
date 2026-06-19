@@ -50,9 +50,11 @@ interface MemberModalProps {
   member: Member | null
   onClose: () => void
   onSuccess: () => void
+  userRole?: string
+  userSectorUnitId?: number
 }
 
-export default function MemberModal({ member, onClose, onSuccess }: MemberModalProps) {
+export default function MemberModal({ member, onClose, onSuccess, userRole, userSectorUnitId }: MemberModalProps) {
   const { t } = useTranslation()
   
   // Dynamic label maps based on sector type
@@ -122,8 +124,14 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
 
   useEffect(() => {
     api.get('/sector-types').then(res => setSectorTypes(res.data))
-    api.get('/settings').then(res => setSettings(res.data)).catch(console.error)
+    api.get('/settings').then(res => setSettings(res.data.data)).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    if (userRole === 'sector_officer' && userSectorUnitId && !member) {
+      setSelectedSectorId(String(userSectorUnitId));
+    }
+  }, [userRole, userSectorUnitId, member])
 
   useEffect(() => {
     if (selectedSectorType) {
@@ -342,56 +350,76 @@ export default function MemberModal({ member, onClose, onSuccess }: MemberModalP
           {/* Sector / Membership Details */}
           <div>
             <h3 className="text-lg font-semibold mb-4">{t('common.membership_details')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('common.sector_type')} *</label>
-                <select
-                  value={selectedSectorType}
-                  onChange={(e) => {
-                    setSelectedSectorType(e.target.value)
-                    setSelectedSectorId('')
-                    setSelectedCategoryId('')
-                    setSectors([])
-                    setCategories([])
-                  }}
-                  className="input"
-                  required={!member}
-                >
-                  <option value="">{t('common.search')}...</option>
-                  {sectorTypes.map(t_obj => <option key={t_obj.id} value={t_obj.name}>{t_obj.name === 'Institution' ? t('common.institution') : t_obj.name === 'Rural Cluster' ? t('common.rural') : t_obj.name === 'Urban Woreda' ? t('common.urban') : t_obj.name === 'Secondary School' ? t('common.secondary_school') : t_obj.name === 'Health Institution' ? t('common.health_institution') : t_obj.name}</option>)}
-                </select>
+            {userRole === 'sector_officer' ? (
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+                  {t('common.your_sector_auto_assigned')}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('common.category')} *</label>
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="input"
+                    required
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{sectorUnitLabel} *</label>
-                <select
-                  value={selectedSectorId}
-                  onChange={(e) => {
-                    setSelectedSectorId(e.target.value)
-                    setSelectedCategoryId('')
-                    setCategories([])
-                  }}
-                  className="input"
-                  required
-                  disabled={!selectedSectorType && !member}
-                >
-                  <option value="">{sectorUnitPlaceholder}</option>
-                  {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
-                </select>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('common.sector_type')} *</label>
+                  <select
+                    value={selectedSectorType}
+                    onChange={(e) => {
+                      setSelectedSectorType(e.target.value)
+                      setSelectedSectorId('')
+                      setSelectedCategoryId('')
+                      setSectors([])
+                      setCategories([])
+                    }}
+                    className="input"
+                    required={!member}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {sectorTypes.map(t_obj => <option key={t_obj.id} value={t_obj.name}>{t_obj.name === 'Institution' ? t('common.institution') : t_obj.name === 'Rural Cluster' ? t('common.rural') : t_obj.name === 'Urban Woreda' ? t('common.urban') : t_obj.name === 'Secondary School' ? t('common.secondary_school') : t_obj.name === 'Health Institution' ? t('common.health_institution') : t_obj.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{sectorUnitLabel} *</label>
+                  <select
+                    value={selectedSectorId}
+                    onChange={(e) => {
+                      setSelectedSectorId(e.target.value)
+                      setSelectedCategoryId('')
+                      setCategories([])
+                    }}
+                    className="input"
+                    required
+                    disabled={!selectedSectorType && !member}
+                  >
+                    <option value="">{sectorUnitPlaceholder}</option>
+                    {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('common.category')} *</label>
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="input"
+                    required
+                    disabled={!selectedSectorId && !member}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('common.category')} *</label>
-                <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="input"
-                  required
-                  disabled={!selectedSectorId && !member}
-                >
-                  <option value="">{t('common.search')}...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
-                </select>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Financial Information */}

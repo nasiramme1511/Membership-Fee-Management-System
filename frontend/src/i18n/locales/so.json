@@ -408,7 +408,8 @@
     "branch": "Branch",
     "current_month": "Bishan",
     "current_year": "Sannadkan",
-    "download_pdf": "Download PDF"
+    "download_pdf": "Download PDF",
+    "your_sector_auto_assigned": "Qaybtaada iyo cutubkaaga si toos ah ayaa loo qoondeeyay. Fadlan dooro qaybta."
   },
   "nav": {
     "home": "Guriga",

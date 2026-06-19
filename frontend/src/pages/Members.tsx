@@ -944,6 +944,8 @@ export default function Members() {
           member={editingMember as any}
           onClose={() => { setShowMemberModal(false); setEditingMember(null) }}
           onSuccess={() => { setShowMemberModal(false); setEditingMember(null); fetchMembers(true) }}
+          userRole={user?.role}
+          userSectorUnitId={user?.sectorUnitId}
         />
       )}
 
@@ -952,6 +954,8 @@ export default function Members() {
         <ImportModal
           onClose={() => setShowImportModal(false)}
           onSuccess={() => { setShowImportModal(false); setHasFiltered(true); setSelectedSectorType(''); setSelectedSectorId(''); setSelectedCategoryId(''); setPagination(prev => ({ ...prev, page: 1 })); fetchMembers(true) }}
+          userRole={user?.role}
+          userSectorUnitId={user?.sectorUnitId}
         />
       )}
 

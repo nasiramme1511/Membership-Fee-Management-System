@@ -6,9 +6,11 @@ import { X, Upload, Download } from 'lucide-react'
 interface ImportModalProps {
   onClose: () => void
   onSuccess: () => void
+  userRole?: string
+  userSectorUnitId?: number
 }
 
-export default function ImportModal({ onClose, onSuccess }: ImportModalProps) {
+export default function ImportModal({ onClose, onSuccess, userRole, userSectorUnitId }: ImportModalProps) {
   const { t } = useTranslation()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,7 +27,10 @@ export default function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
   useEffect(() => {
     api.get('/sector-types').then(res => setSectorTypes(res.data)).catch(() => {})
-  }, [])
+    if (userRole === 'sector_officer' && userSectorUnitId) {
+      setSelectedSectorId(String(userSectorUnitId));
+    }
+  }, [userRole, userSectorUnitId])
 
   useEffect(() => {
     if (selectedSectorType) {
@@ -132,51 +137,70 @@ export default function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
           {/* Optional Default Sector Mapping */}
           <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <p className="text-sm font-medium mb-3">Optional: Apply to all imported members</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <p className="text-sm font-medium mb-3">Apply to all imported members</p>
+            {userRole === 'sector_officer' ? (
               <div>
-                <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.sector_type')}</label>
-                <select
-                  className="input py-1.5 text-sm"
-                  value={selectedSectorType}
-                  onChange={e => {
-                    setSelectedSectorType(e.target.value)
-                    setSelectedSectorId('')
-                    setSelectedCategoryId('')
-                  }}
-                >
-                  <option value="">{t('common.search')}...</option>
-                  {sectorTypes.map(t_obj => <option key={t_obj.id} value={t_obj.name}>{t_obj.name === 'Institution' ? t('common.institution') : t_obj.name === 'Rural Cluster' ? t('common.rural') : t_obj.name === 'Urban Woreda' ? t('common.urban') : t_obj.name === 'Secondary School' ? t('common.secondary_school') : t_obj.name === 'Health Institution' ? t('common.health_institution') : t_obj.name}</option>)}
-                </select>
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300 mb-3">
+                  {t('common.your_sector_auto_assigned')}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.category')}</label>
+                  <select
+                    className="input py-1.5 text-sm"
+                    value={selectedCategoryId}
+                    onChange={e => setSelectedCategoryId(e.target.value)}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.sector_unit')}</label>
-                <select
-                  className="input py-1.5 text-sm"
-                  value={selectedSectorId}
-                  onChange={e => {
-                    setSelectedSectorId(e.target.value)
-                    setSelectedCategoryId('')
-                  }}
-                  disabled={!selectedSectorType}
-                >
-                  <option value="">{t('common.search')}...</option>
-                  {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
-                </select>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.sector_type')}</label>
+                  <select
+                    className="input py-1.5 text-sm"
+                    value={selectedSectorType}
+                    onChange={e => {
+                      setSelectedSectorType(e.target.value)
+                      setSelectedSectorId('')
+                      setSelectedCategoryId('')
+                    }}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {sectorTypes.map(t_obj => <option key={t_obj.id} value={t_obj.name}>{t_obj.name === 'Institution' ? t('common.institution') : t_obj.name === 'Rural Cluster' ? t('common.rural') : t_obj.name === 'Urban Woreda' ? t('common.urban') : t_obj.name === 'Secondary School' ? t('common.secondary_school') : t_obj.name === 'Health Institution' ? t('common.health_institution') : t_obj.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.sector_unit')}</label>
+                  <select
+                    className="input py-1.5 text-sm"
+                    value={selectedSectorId}
+                    onChange={e => {
+                      setSelectedSectorId(e.target.value)
+                      setSelectedCategoryId('')
+                    }}
+                    disabled={!selectedSectorType}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {sectors.map(s => <option key={s.id} value={s.id}>{t(`common.${s.name}`, { defaultValue: s.name })}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.category')}</label>
+                  <select
+                    className="input py-1.5 text-sm"
+                    value={selectedCategoryId}
+                    onChange={e => setSelectedCategoryId(e.target.value)}
+                    disabled={!selectedSectorId}
+                  >
+                    <option value="">{t('common.search')}...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">{t('common.category')}</label>
-                <select
-                  className="input py-1.5 text-sm"
-                  value={selectedCategoryId}
-                  onChange={e => setSelectedCategoryId(e.target.value)}
-                  disabled={!selectedSectorId}
-                >
-                  <option value="">{t('common.search')}...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{t(`common.${c.name}`, { defaultValue: c.name })}</option>)}
-                </select>
-              </div>
-            </div>
+            )}
             <p className="mt-2 text-[10px] text-slate-500">
               If selected, the system will ignore the Excel column and assign these to ALL members in this file.
             </p>

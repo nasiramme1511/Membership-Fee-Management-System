@@ -93,7 +93,7 @@ class ClassificationEngine {
             classificationRuleId = 'WING-MICRO-SMALL';
           } else {
             // 8d: General → 10 Birr per month
-            monthlyFee = wSettings.general ?? 10;
+            monthlyFee = wSettings.general_annual ?? 10;
             classificationRuleId = 'WING-GENERAL';
           }
         }
