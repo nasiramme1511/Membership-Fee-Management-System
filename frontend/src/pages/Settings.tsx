@@ -468,12 +468,36 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="mb-3">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Resident Young/women wing members</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { key: 'farmer',         label: 'Art.8a Farmer/Pastoral (Birr/month)' },
-                    { key: 'informal',       label: 'Art.8b Informal (Birr/month)' },
+                    { key: 'farmer',   label: 'Art.8a Farmer/Pastoral (Birr/month)' },
+                    { key: 'informal', label: 'Art.8b Informal (Birr/month)' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium mb-1">{label}</label>
+                      <input
+                        type="number"
+                        value={settings.contributionRules.wing[key] ?? ''}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          contributionRules: {
+                            ...settings.contributionRules,
+                            wing: { ...settings.contributionRules.wing, [key]: Number(e.target.value) }
+                          }
+                        })}
+                        className="input"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enterprise micro/small/medium/general Young/women wings members</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
                     { key: 'micro_small',    label: 'Art.8c Micro/Small (Birr/month)' },
                     { key: 'general_annual', label: 'Art.8d General (Birr/year)' },
                   ].map(({ key, label }) => (
