@@ -261,24 +261,35 @@ export default function MemberModal({ member, onClose, onSuccess, userRole, user
     setLoading(true)
     setError('')
     const isEditing = !!member?._id
+    const memberName = formData.fullName
     const toastId = toast.loading(
-      isEditing ? 'Updating Member Record...' : 'Registering New Member...',
-      isEditing ? 'Saving changes to the member profile.' : 'Processing member registration and fee calculation.'
+      isEditing ? `Updating: ${memberName}` : `Registering: ${memberName}`,
+      isEditing
+        ? 'Validating changes and updating member profile...'
+        : 'Calculating contribution fee and generating payment schedule...'
     )
     try {
       if (isEditing) {
-        await api.put(`/members/${member._id}`, formData)
-        toast.update(toastId, 'success', 'Member Updated Successfully', `${formData.fullName}'s profile has been updated with the latest information.`)
+        const res = await api.put(`/members/${member._id}`, formData)
+        toast.update(toastId, 'success', 'Profile Update Complete',
+          `${memberName} — membership record has been updated successfully. All changes are now active.`
+        )
       } else {
-        await api.post('/members', formData)
-        toast.update(toastId, 'success', 'Member Registered Successfully', `${formData.fullName} has been registered and their contribution fee has been calculated.`)
+        const res = await api.post('/members', formData)
+        const memberId = res.data.data?.memberId || ''
+        toast.update(toastId, 'success', 'Member Registration Complete',
+          `${memberName} (${memberId}) has been registered. A 13-month Ethiopian payment schedule has been generated.`
+        )
       }
       onSuccess()
       onClose()
     } catch (err: any) {
       const msg = err.response?.data?.message || t('common.error')
       setError(msg)
-      toast.update(toastId, 'error', isEditing ? 'Update Failed' : 'Registration Failed', msg)
+      toast.update(toastId, 'error',
+        isEditing ? 'Profile Update Failed' : 'Registration Failed',
+        msg
+      )
     } finally {
       setLoading(false)
     }

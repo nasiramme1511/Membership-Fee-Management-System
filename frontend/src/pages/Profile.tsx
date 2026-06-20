@@ -5,9 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Camera, Save, Key, User, Mail, AtSign, Shield, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
-
-interface Toast { type: 'success' | 'error'; message: string }
-
+import { useToast } from '../components/Toast'
 export default function Profile() {
   const { t } = useTranslation()
   const { user, login, updateUser } = useAuth()
@@ -25,14 +23,7 @@ export default function Profile() {
   const [savingPassword, setSavingPassword] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [toast, setToast] = useState<Toast | null>(null)
-  const [sectorUnit, setSectorUnit] = useState<string>('')
-
-  const showToast = (type: 'success' | 'error', message: string) => {
-    setToast({ type, message })
-    setTimeout(() => setToast(null), 4000)
-  }
-
+  const toast = useToast()
   useEffect(() => {
     api.get('/users/me').then(res => {
       const u = res.data.data
@@ -64,9 +55,9 @@ export default function Profile() {
       setPreview(`${baseUrl}${newPic}`)
       updateUser({ profilePic: newPic })
       setAvatarFile(null)
-      showToast('success', t('common.profile_pic_updated'))
+      toast.success('Photo Updated', t('common.profile_pic_updated'))
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to upload picture.')
+      toast.error('Upload Failed', err.response?.data?.message || 'Failed to upload picture.')
     } finally {
       setUploadingAvatar(false)
     }
@@ -74,11 +65,12 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setSaving(true)
+    const toastId = toast.loading('Saving Profile...', 'Updating your personal information.')
     try {
       await api.put('/users/me', profile)
-      showToast('success', t('common.profile_updated'))
+      toast.update(toastId, 'success', 'Profile Updated', t('common.profile_updated'))
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to update profile.')
+      toast.update(toastId, 'error', 'Save Failed', err.response?.data?.message || 'Failed to update profile.')
     } finally {
       setSaving(false)
     }
@@ -86,23 +78,24 @@ export default function Profile() {
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      showToast('error', t('common.passwords_dont_match'))
+      toast.error('Validation Error', t('common.passwords_dont_match'))
       return
     }
     if (passwordForm.newPassword.length < 6) {
-      showToast('error', 'Password must be at least 6 characters.')
+      toast.error('Validation Error', 'Password must be at least 6 characters.')
       return
     }
     setSavingPassword(true)
+    const toastId = toast.loading('Changing Password...', 'Applying your new password.')
     try {
       await api.put('/users/me/password', {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       })
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-      showToast('success', t('common.password_changed'))
+      toast.update(toastId, 'success', 'Password Changed', t('common.password_changed'))
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to change password.')
+      toast.update(toastId, 'error', 'Change Failed', err.response?.data?.message || 'Failed to change password.')
     } finally {
       setSavingPassword(false)
     }
@@ -133,18 +126,6 @@ export default function Profile() {
       variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.12 } } }}
       className="max-w-3xl mx-auto space-y-6"
     >
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl transition-all animate-in slide-in-from-right-4 ${
-          toast.type === 'success'
-            ? 'bg-green-600 text-white'
-            : 'bg-red-600 text-white'
-        }`}>
-          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-          <span className="font-medium">{toast.message}</span>
-        </div>
-      )}
-
       <motion.div variants={cardVariants}>
         <h1 className="text-2xl font-bold">{t('common.my_profile')}</h1>
         <p className="text-gray-600 dark:text-gray-400">{t('common.profile_subtitle')}</p>

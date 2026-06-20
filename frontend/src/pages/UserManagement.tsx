@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useToast } from '../components/Toast'
 
 interface SectorUnit { id: number; name: string; sectorTypeName?: string }
 interface SectorType { id: number; name: string }
@@ -24,7 +25,6 @@ interface UserAccount {
   assignedSectorUnit?: { id: number; name: string } | null
 }
 
-interface Toast { type: 'success' | 'error'; message: string }
 
 const emptyForm = {
   username: '', email: '', fullName: '',
@@ -40,7 +40,7 @@ export default function UserManagement() {
   const [filteredSectorUnits, setFilteredSectorUnits] = useState<SectorUnit[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [toast, setToast] = useState<Toast | null>(null)
+  const toast = useToast()
 
   const ROLE_COLORS: Record<string, string> = {
     admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
@@ -64,10 +64,6 @@ export default function UserManagement() {
   // Confirm delete dialog
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ open: boolean; user: UserAccount | null }>({ open: false, user: null })
 
-  const showToast = (type: 'success' | 'error', message: string) => {
-    setToast({ type, message })
-    setTimeout(() => setToast(null), 4000)
-  }
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -133,18 +129,19 @@ export default function UserManagement() {
 
   const handleSave = async () => {
     if (!form.fullName || !form.email || !form.username) {
-      showToast('error', 'Full name, email, and username are required.')
+      toast.error('Validation Error', 'Full name, email, and username are required.')
       return
     }
     if (form.role === 'sector_officer' && !form.sectorUnitId) {
-      showToast('error', 'Please select a Sector Type and Assigned Sector for the Sector Officer.')
+      toast.error('Validation Error', 'Please select a Sector Type and Assigned Sector for the Sector Officer.')
       return
     }
     if (!editingUser && !form.password) {
-      showToast('error', 'Password is required for new users.')
+      toast.error('Validation Error', 'Password is required for new users.')
       return
     }
     setSaving(true)
+    const toastId = toast.loading('Saving User...', 'Processing user data.')
     try {
       const payload: any = {
         username: form.username,
@@ -158,15 +155,15 @@ export default function UserManagement() {
 
       if (editingUser) {
         await api.put(`/users/${editingUser.id}`, payload)
-        showToast('success', t('common.user_saved'))
+        toast.update(toastId, 'success', 'User Updated', t('common.user_saved'))
       } else {
         await api.post('/users', payload)
-        showToast('success', t('common.user_saved'))
+        toast.update(toastId, 'success', 'User Created', t('common.user_saved'))
       }
       setShowModal(false)
       fetchUsers()
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to save user.')
+      toast.update(toastId, 'error', 'Save Failed', err.response?.data?.message || 'Failed to save user.')
     } finally {
       setSaving(false)
     }
@@ -180,12 +177,13 @@ export default function UserManagement() {
     const u = confirmDeleteUser.user
     setConfirmDeleteUser({ open: false, user: null })
     if (!u) return
+    const toastId = toast.loading('Deleting User...', `Removing user ${u.fullName}.`)
     try {
       await api.delete(`/users/${u.id}`)
-      showToast('success', t('common.user_deleted'))
+      toast.update(toastId, 'success', 'User Deleted', t('common.user_deleted'))
       fetchUsers()
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to delete user.')
+      toast.update(toastId, 'error', 'Delete Failed', err.response?.data?.message || 'Failed to delete user.')
     }
   }
 
@@ -193,26 +191,27 @@ export default function UserManagement() {
     try {
       await api.put(`/users/${u.id}`, { isActive: !u.isActive })
       fetchUsers()
-      showToast('success', t('common.user_saved'))
+      toast.success('Status Updated', `User ${u.fullName} is now ${!u.isActive ? 'active' : 'inactive'}.`)
     } catch (err: any) {
-      showToast('error', 'Failed to update status.')
+      toast.error('Update Failed', 'Failed to update status.')
     }
   }
 
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
-      showToast('error', 'Password must be at least 6 characters.')
+      toast.error('Validation Error', 'Password must be at least 6 characters.')
       return
     }
     setResettingPassword(true)
+    const toastId = toast.loading('Resetting Password...', 'Applying new password.')
     try {
       await api.put(`/users/${passwordTarget!.id}/reset-password`, { newPassword })
-      showToast('success', t('common.password_reset_success'))
+      toast.update(toastId, 'success', 'Password Reset', t('common.password_reset_success'))
       setShowPasswordModal(false)
       setNewPassword('')
       setPasswordTarget(null)
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Failed to reset password.')
+      toast.update(toastId, 'error', 'Reset Failed', err.response?.data?.message || 'Failed to reset password.')
     } finally {
       setResettingPassword(false)
     }
@@ -231,16 +230,6 @@ export default function UserManagement() {
       transition={{ duration: 0.5 }} 
       className="space-y-6"
     >
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl animate-in slide-in-from-right-4 ${
-          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-        }`}>
-          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-bold">{toast.message}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

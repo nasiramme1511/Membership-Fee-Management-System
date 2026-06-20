@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../lib/api';
 import { X, Plus, Save, Loader2, Trash2, Table2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from './Toast';
 
 interface FastEntryModalProps {
   onClose: () => void;
@@ -329,6 +330,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   const handleSaveAll = async () => {
     if (!selectedSectorId || !selectedCategoryId) {
       setError(t('common.please_select_sector_and_category'));
+      toast.warning('Incomplete Selection', 'Please select a Sector Unit and Category before saving members.');
       return;
     }
     const isSalaryRequired = mType === 'Salary-Based' || mType === 'Investor';
@@ -338,11 +340,17 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
       return nameOk && salaryOk;
     });
     if (validRows.length === 0) {
-      setError('No valid rows to save. Please enter member names.');
+      const msg = 'No valid rows to save. Please enter at least one member with a name and required fields.';
+      setError(msg);
+      toast.warning('No Data to Save', msg);
       return;
     }
     setSaving(true);
     setError('');
+    const toastId = toast.loading(
+      `Processing ${validRows.length} Members`,
+      `Validating entries, checking for duplicates, and calculating contribution fees...`
+    );
     try {
       const payload = validRows.map(r => ({
         fullName: r.fullName,
@@ -364,14 +372,34 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
         address: { region: 'Dire Dawa', city: 'Dire Dawa', woreda: '01' }
       }));
       const res = await api.post('/members/bulk-append', payload);
+      const created = res.data.data?.length || 0;
+      const skipped = res.data.skipped?.length || 0;
+      const hasErrors = res.data.errors?.length > 0;
+      const totalRevenue = validRows.reduce((acc, r) => acc + r.monthlyFee, 0);
+      if (created > 0) {
+        let msg = `${created} member${created > 1 ? 's' : ''} registered`;
+        if (totalRevenue > 0) msg += ` | Est. monthly contribution: ETB ${totalRevenue.toFixed(2)}`;
+        if (skipped > 0) msg += `. ${skipped} duplicate${skipped > 1 ? 's were' : ' was'} skipped.`;
+        toast.update(toastId, 'success', 'Batch Entry Complete', msg);
+        if (hasErrors) {
+          toast.warning('Partial Errors', `${res.data.errors.length} row${res.data.errors.length > 1 ? 's' : ''} encountered errors. Check the data and retry.`);
+        }
+      } else if (skipped > 0) {
+        toast.update(toastId, 'warning', 'All Entries Skipped',
+          `${skipped} member${skipped > 1 ? 's were' : ' was'} identified as duplicates and were not saved.`
+        );
+      }
       if (res.data.skipped && res.data.skipped.length > 0) {
-        setError(`Saved ${res.data.data.length} members. ${res.data.skipped.length} members were skipped as they already exist.`);
+        const skippedNames = res.data.skipped.map((s: any) => s.name).join(', ');
+        setError(`Saved ${created} members. ${skipped} skipped (duplicates): ${skippedNames}`);
         setTimeout(() => onSuccess(), 2000);
       } else {
         onSuccess();
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || t('common.error'));
+      const msg = err.response?.data?.message || t('common.error');
+      setError(msg);
+      toast.update(toastId, 'error', 'Batch Entry Failed', msg);
     } finally {
       setSaving(false);
     }

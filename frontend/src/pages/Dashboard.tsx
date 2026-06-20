@@ -10,6 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
+import { useToast } from '../components/Toast'
 
 interface DashboardData {
   summary: {
@@ -90,6 +91,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [aiInsights, setAiInsights] = useState<AIInsights | null>(null)
+  const toast = useToast()
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null)
   const [sectorAnalytics, setSectorAnalytics] = useState<SectorAnalytics[]>([])
   const [showSectorChart, setShowSectorChart] = useState(false)
@@ -148,6 +150,7 @@ export default function Dashboard() {
   }, [])
 
   const exportReport = async (format: 'pdf' | 'csv' | 'xlsx') => {
+    const toastId = toast.loading('Exporting Report...', `Generating ${format.toUpperCase()} report.`)
     try {
       const res = await api.get(`/reports/export?format=${format}`, { responseType: 'blob' })
       const url = window.URL.createObjectURL(new Blob([res.data]))
@@ -157,7 +160,9 @@ export default function Dashboard() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      toast.update(toastId, 'success', 'Export Complete', `Successfully downloaded report.`)
     } catch (err) {
+      toast.update(toastId, 'error', 'Export Failed', 'An error occurred while exporting the report.')
       console.error('Export error:', err)
     }
   }

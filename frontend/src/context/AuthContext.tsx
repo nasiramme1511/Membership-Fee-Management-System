@@ -18,6 +18,8 @@ interface AuthContextType {
   logout: () => void
   updateUser: (user: Partial<User>) => void
   loading: boolean
+  verifyEmail: (email: string, otpCode: string) => Promise<void>
+  resendOtp: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -43,9 +45,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password })
+    try {
+      const res = await api.post('/auth/login', { email, password })
+      localStorage.setItem('token', res.data.data.token)
+      setUser(res.data.data.user)
+    } catch (err: any) {
+      if (err.response?.data?.requireVerification) {
+        const verErr: any = new Error(err.response.data.message || 'Email not verified')
+        verErr.requireVerification = true
+        verErr.email = err.response.data.email
+        throw verErr
+      }
+      throw err
+    }
+  }
+
+  const verifyEmail = async (email: string, otpCode: string) => {
+    const res = await api.post('/auth/verify-email', { email, otpCode })
     localStorage.setItem('token', res.data.data.token)
     setUser(res.data.data.user)
+  }
+
+  const resendOtp = async (email: string) => {
+    await api.post('/auth/resend-otp', { email })
   }
 
   const logout = () => {
@@ -59,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading, verifyEmail, resendOtp }}>
       {children}
     </AuthContext.Provider>
   )
