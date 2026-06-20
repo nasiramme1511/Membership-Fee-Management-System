@@ -5,6 +5,7 @@ import { Settings, DollarSign, RotateCcw, Trash2, Save } from 'lucide-react'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useToast } from '../components/Toast'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -12,8 +13,8 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     fetchSettings()
@@ -32,7 +33,7 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setSaving(true)
-    setMessage('')
+    const toastId = toast.loading('Saving Settings...', 'Applying your updated rules and recalculating members.')
     try {
       // Filter out branches without names before saving
       const dataToSave = {
@@ -40,17 +41,15 @@ export default function SettingsPage() {
         branches: settings.branches.filter((b: any) => b.name && b.name.trim() !== '')
       }
       await api.put('/settings', dataToSave)
-      setMessage('⏳ Settings saved. Recalculating all members...')
 
       // Immediately recalculate all members with the new rules
       const recalcRes = await api.post('/settings/recalculate')
-      setMessage(`✅ Settings saved & ${recalcRes.data.data?.updated ?? 0} members recalculated!`)
+      toast.update(toastId, 'success', 'Settings Saved', `Successfully updated settings and recalculated ${recalcRes.data.data?.updated ?? 0} members.`)
 
       // Refetch to get updated data with proper IDs
       await fetchSettings()
-      setTimeout(() => setMessage(''), 5000)
     } catch (err: any) {
-      setMessage('❌ Failed to save: ' + (err.response?.data?.message || err.message))
+      toast.update(toastId, 'error', 'Save Failed', err.response?.data?.message || err.message)
     } finally {
       setSaving(false)
     }
@@ -62,12 +61,12 @@ export default function SettingsPage() {
 
   const doRecalculate = async () => {
     setConfirmOpen(false)
+    const toastId = toast.loading('Recalculating Members...', 'Applying current rules to all member profiles.')
     try {
       const res = await api.post('/settings/recalculate')
-      setMessage(`✅ ${res.data.message}`)
-      setTimeout(() => setMessage(''), 5000)
+      toast.update(toastId, 'success', 'Recalculation Complete', res.data.message)
     } catch (err: any) {
-      setMessage('❌ Failed: ' + err.response?.data?.message)
+      toast.update(toastId, 'error', 'Recalculation Failed', err.response?.data?.message || 'Could not recalculate members.')
     }
   }
 
@@ -120,12 +119,6 @@ export default function SettingsPage() {
         </button>
       </div>
 
-
-      {message && (
-        <div className={`p-4 rounded-lg ${message.includes('✅') ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
-          {message}
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">

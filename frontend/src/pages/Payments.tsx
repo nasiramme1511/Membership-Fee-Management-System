@@ -281,8 +281,9 @@ export default function Payments() {
     try {
       await api.put(`/sector-payments/${id}/reopen`, { reason })
       await fetchSectorPayments()
+      toast.success('Payment Reopened', 'The payment has been successfully reopened.')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error reopening payment')
+      toast.error('Reopen Failed', err.response?.data?.message || 'Error reopening payment')
     }
   }
 
@@ -291,8 +292,9 @@ export default function Payments() {
     try {
       await api.put(`/sector-payments/${id}/revoke`, { reason })
       await fetchSectorPayments()
+      toast.success('Approval Revoked', 'The payment approval has been revoked.')
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error revoking approval')
+      toast.error('Revoke Failed', err.response?.data?.message || 'Error revoking approval')
     }
   }
 

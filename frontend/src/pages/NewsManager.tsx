@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit3, Trash2, X, Save, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react'
 import api from '../lib/api'
 import PageLoader from '../components/PageLoader'
+import { useToast } from '../components/Toast'
 
 interface NewsItem {
   id: number
@@ -29,8 +30,8 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
   const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
   const [showForm, setShowForm] = useState(false)
+  const toast = useToast()
   const [editing, setEditing] = useState<NewsItem | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({ title: '', content: '', category: 'news', language: 'en' })
@@ -44,17 +45,11 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
       const res = await api.get('/news')
       if (res.data.success) setNews(res.data.data)
     } catch (err: any) {
-      showMessage('error', 'Failed to load news')
+      toast.error('Load Failed', 'Failed to load news')
     } finally {
       setLoading(false)
     }
   }
-
-  const showMessage = (type: string, text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000)
-  }
-
   const openCreate = () => {
     setEditing(null)
     setForm({ title: '', content: '', category: 'news', language: 'en' })
@@ -70,8 +65,9 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
   }
 
   const handleSave = async () => {
-    if (!form.title.trim()) { showMessage('error', 'Title is required'); return }
+    if (!form.title.trim()) { toast.error('Validation Error', 'Title is required'); return }
     setSaving(true)
+    const toastId = toast.loading(editing ? 'Updating Article...' : 'Publishing Article...', 'Processing news content.')
     try {
       const formData = new FormData()
       formData.append('title', form.title)
@@ -90,13 +86,13 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
       }
 
       if (res.data.success) {
-        showMessage('success', editing ? 'News updated' : 'News created')
+        toast.update(toastId, 'success', editing ? 'Article Updated' : 'Article Published', editing ? 'News successfully updated' : 'News successfully created')
         setShowForm(false)
         setEditing(null)
         fetchNews()
       }
     } catch (err: any) {
-      showMessage('error', err.response?.data?.message || 'Save failed')
+      toast.update(toastId, 'error', 'Save Failed', err.response?.data?.message || 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -104,13 +100,14 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
 
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this news article? This cannot be undone.')) return
+    const toastId = toast.loading('Deleting Article...', 'Removing article from system.')
     try {
       const res = await api.delete(`/news/${id}`)
       if (res.data.success) {
-        showMessage('success', 'News deleted')
+        toast.update(toastId, 'success', 'Deleted', 'News deleted')
         fetchNews()
       }
-    } catch { showMessage('error', 'Delete failed') }
+    } catch { toast.update(toastId, 'error', 'Delete Failed', 'Could not delete article') }
   }
 
   const handleFileSelect = () => {
@@ -138,12 +135,6 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
           <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2.5 bg-[#0B5D3B] hover:bg-[#094a2f] text-white rounded-xl text-sm font-semibold transition-colors">
             <Plus className="w-4 h-4" /> New Article
           </button>
-        </div>
-      )}
-
-      {message.text && (
-        <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
-          {message.text}
         </div>
       )}
 

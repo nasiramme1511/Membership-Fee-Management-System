@@ -61,13 +61,16 @@ export default function ImportModal({ onClose, onSuccess, userRole, userSectorUn
   const handleUpload = async () => {
     if (!file) {
       setError(t('common.please_select_file'))
-      toast.warning('No File Selected', 'Please select an Excel or CSV file before importing.')
+      toast.warning('No File Selected', 'Please select an Excel (.xlsx/.xls) or CSV file before importing.')
       return
     }
 
     setLoading(true)
     setError('')
-    const toastId = toast.loading('Importing Members...', `Processing ${file.name}. This may take a moment for large files.`)
+    const toastId = toast.loading(
+      'Processing Import File',
+      `Reading ${file.name}. Validating data and processing member records...`
+    )
 
     const formData = new FormData()
     formData.append('file', file)
@@ -83,16 +86,32 @@ export default function ImportModal({ onClose, onSuccess, userRole, userSectorUn
       const { success, errors, duplicates } = res.data.data
       if (success > 0) {
         const skipped = (errors?.length || 0) + (duplicates?.length || 0)
+        const summary = [
+          `${success} member${success > 1 ? 's' : ''} imported successfully`,
+          errors?.length > 0 ? `${errors.length} error${errors.length > 1 ? 's' : ''}` : '',
+          duplicates?.length > 0 ? `${duplicates.length} duplicate${duplicates.length > 1 ? 's' : ''} skipped` : '',
+        ].filter(Boolean).join(' • ')
         toast.update(
           toastId, 'success',
-          `Import Complete — ${success} Members Added`,
-          skipped > 0
-            ? `${success} members imported successfully. ${skipped} records were skipped (duplicates or errors).`
-            : `All ${success} members have been successfully imported and their contribution fees calculated.`
+          `Import Complete — ${success} Record${success > 1 ? 's' : ''} Added`,
+          summary
         )
+        if (errors?.length > 0) {
+          const sampleErrors = errors.slice(0, 3).map((e: any) => `Row ${e.row}: ${e.error}`).join('\n')
+          toast.warning(
+            `${errors.length} Row${errors.length > 1 ? 's' : ''} Failed`,
+            errors.length > 3
+              ? `${sampleErrors}\n...and ${errors.length - 3} more. Review the file and retry.`
+              : sampleErrors
+          )
+        }
         onSuccess()
       } else {
-        toast.update(toastId, 'error', 'Import Failed', 'No members were imported. Please check the file format and try again.')
+        const reason = errors?.length > 0
+          ? `${errors.length} row${errors.length > 1 ? 's' : ''} contained errors. No data was imported.`
+          : 'No valid records found in the file. Please check the column headers match the template format.'
+        setError(reason)
+        toast.update(toastId, 'error', 'Import Failed', reason)
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || t('common.error')
@@ -231,35 +250,54 @@ export default function ImportModal({ onClose, onSuccess, userRole, userSectorUn
 
           {/* Import Result */}
           {result && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">{t('common.result')}</p>
-              <p className="text-sm">✅ {t('common.import_success')}: {result.success} {t('common.members')}</p>
-              {result.errors?.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-red-600 dark:text-red-400">❌ {t('common.error')}: {result.errors.length}</p>
-                  <ul className="text-xs mt-1 space-y-1">
-                    {result.errors.slice(0, 5).map((err: any, i: number) => (
-                      <li key={i}>Row {err.row}: {err.error}</li>
-                    ))}
-                  </ul>
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 overflow-hidden">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 border-b border-emerald-200 dark:border-emerald-800/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200">Import Summary</span>
                 </div>
-              )}
-              {result.duplicates?.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                    ⚠️ {t('common.duplicates_found')}: {result.duplicates.length}
-                  </p>
-                  <p className="text-[10px] text-amber-500 mb-1">The following phone numbers already exist in the system:</p>
-                  <ul className="text-xs bg-amber-50/50 dark:bg-amber-900/10 p-2 rounded border border-amber-100 dark:border-amber-900/30 max-h-32 overflow-y-auto custom-scrollbar">
-                    {result.duplicates.map((dup: any, i: number) => (
-                      <li key={i} className="flex justify-between py-0.5 border-b border-amber-100/50 last:border-0">
-                        <span>{dup.name}</span>
-                        <span className="font-mono text-amber-700 dark:text-amber-300">{dup.phone}</span>
-                      </li>
-                    ))}
-                  </ul>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between py-2 px-3 bg-emerald-100/50 dark:bg-emerald-900/10 rounded-lg">
+                  <span className="text-sm text-emerald-700 dark:text-emerald-300 font-semibold">Successfully Imported</span>
+                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-200">{result.success}</span>
                 </div>
-              )}
+                {result.errors?.length > 0 && (
+                  <div className="py-2 px-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-red-700 dark:text-red-300">Failed Rows</span>
+                      <span className="text-lg font-black text-red-600">{result.errors.length}</span>
+                    </div>
+                    <ul className="text-xs space-y-1">
+                      {result.errors.slice(0, 5).map((err: any, i: number) => (
+                        <li key={i} className="flex gap-2 text-red-600 dark:text-red-400">
+                          <span className="font-mono shrink-0">#{err.row}</span>
+                          <span>{err.error}</span>
+                        </li>
+                      ))}
+                      {result.errors.length > 5 && (
+                        <li className="text-red-400 text-[10px] pt-1">...and {result.errors.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {result.duplicates?.length > 0 && (
+                  <div className="py-2 px-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">Duplicate Records Skipped</span>
+                      <span className="text-lg font-black text-amber-600">{result.duplicates.length}</span>
+                    </div>
+                    <ul className="text-xs space-y-1 max-h-28 overflow-y-auto custom-scrollbar">
+                      {result.duplicates.map((dup: any, i: number) => (
+                        <li key={i} className="flex items-center justify-between py-0.5 text-amber-700 dark:text-amber-400">
+                          <span className="truncate">{dup.name}</span>
+                          {dup.phone && <span className="font-mono text-[10px] shrink-0 ml-2">{dup.phone}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

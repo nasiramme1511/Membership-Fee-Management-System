@@ -4,11 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
-  Mail, Lock, AlertCircle, BadgeCheck,
+  Mail, Lock, AlertCircle, BadgeCheck, CheckCircle,
   Users, CreditCard, ShieldCheck, Fingerprint, Handshake,
   DollarSign, Target, FileText, PieChart
 } from 'lucide-react'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import { useToast } from '../components/Toast'
 
 const Preloader = () => {
   const { t } = useTranslation()
@@ -42,13 +43,20 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const toast = useToast()
 
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, verifyEmail, resendOtp } = useAuth()
+
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [otpError, setOtpError] = useState('')
 
   const currentLang = i18n.language || 'am'
 
@@ -67,27 +75,63 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setOtpError('')
     try {
       await login(email, password)
+      toast.success('Login Successful', 'Welcome back!')
       navigate('/dashboard')
     } catch (err: any) {
-      if (err.response?.data) {
+      if (err.requireVerification) {
+        setVerificationEmail(err.email)
+        setNeedsVerification(true)
+      } else if (err.response?.data) {
         const apiMsg = err.response.data.message
         if (apiMsg && typeof apiMsg === 'string' && apiMsg.trim()) {
-          setError(apiMsg)
+          toast.error('Login Failed', apiMsg)
         } else if (err.response.status >= 500) {
-          setError(t('common.server_error'))
+          toast.error('Login Failed', t('common.server_error'))
         } else {
-          setError(t('common.error'))
+          toast.error('Login Failed', t('common.error'))
         }
       } else if (err.code === 'ECONNABORTED') {
-        setError(t('common.timeout_error'))
+        toast.error('Login Failed', t('common.timeout_error'))
       } else {
-        setError(t('common.network_error'))
+        toast.error('Login Failed', t('common.network_error'))
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setOtpError('')
+    if (!otpCode || otpCode.length < 6) {
+      setOtpError('Please enter the 6-digit verification code')
+      return
+    }
+    setVerifying(true)
+    try {
+      await verifyEmail(verificationEmail, otpCode)
+      toast.success('Email Verified', 'Your email has been verified successfully!')
+      navigate('/dashboard')
+    } catch (err: any) {
+      setOtpError(err.response?.data?.message || 'Verification failed. Please try again.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setResending(true)
+    setOtpError('')
+    try {
+      await resendOtp(verificationEmail)
+      toast.success('Code Sent', 'A new verification code has been sent to your email.')
+    } catch (err: any) {
+      setOtpError(err.response?.data?.message || 'Failed to resend code')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -316,120 +360,192 @@ export default function Login() {
         {/* ---------- RIGHT: LOGIN FORM ---------- */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-xl">
-              {/* Heading */}
-              <div className="text-left mb-10 px-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome Back!</h1>
-                <p className="text-gray-600 text-base">Please enter your details.</p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="mx-8 mb-4 flex items-center gap-2.5 p-3.5 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                  <p className="text-sm font-medium text-red-600">{error}</p>
+              {!needsVerification && (
+                <div className="text-left mb-10 px-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome Back!</h1>
+                  <p className="text-gray-600 text-base">Please enter your details.</p>
                 </div>
               )}
 
-              {/* Form */}
-              <form id="signIn" onSubmit={handleSubmit} className="space-y-7 px-8">
-                {/* Email */}
-                <div>
-                  <label htmlFor="email" className="block text-base font-bold text-gray-900 mb-2">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className="w-5 h-5 text-gray-400" />
+              {needsVerification ? (
+                <form onSubmit={handleVerify} className="space-y-7 px-8">
+                  <div className="text-center mb-6">
+                    <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                      <Mail className="w-8 h-8 text-emerald-600" />
                     </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+                    <p className="text-gray-600 text-sm">
+                      A verification code has been sent to<br />
+                      <span className="font-semibold text-gray-900">{verificationEmail}</span>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="otp" className="block text-base font-bold text-gray-900 mb-2 text-center">
+                      Enter Verification Code
+                    </label>
                     <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@pp-diredawa.org"
-                      required
-                      className="w-full pl-11 px-4 py-3.5 border-2 rounded-lg outline-none placeholder-gray-400 font-light border-gray-900 focus:ring-[#059669] focus:border-[#059669] transition-all text-base"
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      className="w-full px-4 py-3.5 border-2 rounded-lg outline-none placeholder-gray-400 font-light border-gray-900 focus:ring-[#059669] focus:border-[#059669] transition-all text-base text-center text-2xl tracking-[0.5em] font-mono"
                     />
                   </div>
-                </div>
 
-                {/* Password */}
-                <div>
-                  <label htmlFor="password" className="block text-base font-bold text-gray-900 mb-2">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="w-5 h-5 text-gray-400" />
+                  {otpError && (
+                    <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <span>{otpError}</span>
                     </div>
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      required
-                      className="w-full pl-11 px-4 py-3.5 pr-12 border-2 rounded-lg outline-none placeholder-gray-400 font-light border-gray-900 focus:ring-[#059669] focus:border-[#059669] transition-all text-base"
-                    />
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={verifying || otpCode.length < 6}
+                    className="outline-none font-sans focus:outline-none overflow-x-hidden overflow-y-hidden text-ellipsis whitespace-nowrap inline-flex items-center gap-2 justify-center active:translate-y-px disabled:!cursor-not-allowed disabled:!opacity-50 md:px-16 px-5 py-3.5 text-base font-medium rounded-[10px] !w-full text-white bg-emerald-700 border-emerald-700 hover:bg-emerald-800 focus:ring-emerald-600 !py-3 sm:!py-3.5 text-lg font-semibold !bg-emerald-700 !border-emerald-700 hover:!bg-emerald-800 focus:!ring-emerald-600"
+                  >
+                    {verifying ? (
+                      <>
+                        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      'Verify Email'
+                    )}
+                  </button>
+
+                  <div className="text-center">
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 z-10"
+                      onClick={handleResend}
+                      disabled={resending}
+                      className="text-emerald-700 hover:text-emerald-800 font-semibold text-sm underline underline-offset-2 disabled:opacity-50"
                     >
-                      {showPassword ? (
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <g clipPath="url(#clip0_134_9019)">
-                            <path d="M7.78498 15.6516L6.17581 15.22L6.83165 12.7708C5.84995 12.4087 4.93758 11.8811 4.13415 11.2108L2.33998 13.0058L1.16081 11.8266L2.95581 10.0325C1.94254 8.81893 1.26172 7.3631 0.97998 5.80747L2.61998 5.5083C3.25248 9.00997 6.31581 11.6666 9.99998 11.6666C13.6833 11.6666 16.7475 9.00997 17.38 5.5083L19.02 5.80663C18.7386 7.36248 18.0581 8.81861 17.045 10.0325L18.8391 11.8266L17.66 13.0058L15.8658 11.2108C15.0624 11.8811 14.15 12.4087 13.1683 12.7708L13.8241 15.2208L12.215 15.6516L11.5583 13.2016C10.5269 13.3784 9.47302 13.3784 8.44165 13.2016L7.78498 15.6516Z" fill="currentColor"></path>
-                          </g>
-                          <defs>
-                            <clipPath id="clip0_134_9019"><rect width="20" height="20" rx="10" fill="white"></rect></clipPath>
-                          </defs>
-                        </svg>
-                      ) : (
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <g clipPath="url(#clip1_134_9019)">
-                            <path d="M7.78498 15.6516L6.17581 15.22L6.83165 12.7708C5.84995 12.4087 4.93758 11.8811 4.13415 11.2108L2.33998 13.0058L1.16081 11.8266L2.95581 10.0325C1.94254 8.81893 1.26172 7.3631 0.97998 5.80747L2.61998 5.5083C3.25248 9.00997 6.31581 11.6666 9.99998 11.6666C13.6833 11.6666 16.7475 9.00997 17.38 5.5083L19.02 5.80663C18.7386 7.36248 18.0581 8.81861 17.045 10.0325L18.8391 11.8266L17.66 13.0058L15.8658 11.2108C15.0624 11.8811 14.15 12.4087 13.1683 12.7708L13.8241 15.2208L12.215 15.6516L11.5583 13.2016C10.5269 13.3784 9.47302 13.3784 8.44165 13.2016L7.78498 15.6516Z" fill="currentColor"></path>
-                          </g>
-                          <defs>
-                            <clipPath id="clip1_134_9019"><rect width="20" height="20" rx="10" fill="white"></rect></clipPath>
-                          </defs>
-                        </svg>
-                      )}
+                      {resending ? 'Sending...' : 'Resend verification code'}
                     </button>
                   </div>
-                </div>
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="outline-none font-sans focus:outline-none overflow-x-hidden overflow-y-hidden text-ellipsis whitespace-nowrap inline-flex items-center gap-2 justify-center active:translate-y-px disabled:!cursor-not-allowed disabled:!opacity-50 md:px-16 px-5 py-3.5 text-base font-medium rounded-[10px] !w-full text-white bg-emerald-700 border-emerald-700 hover:bg-emerald-800 focus:ring-emerald-600 !py-3 sm:!py-3.5 text-lg font-semibold !bg-emerald-700 !border-emerald-700 hover:!bg-emerald-800 focus:!ring-emerald-600"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => { setNeedsVerification(false); setOtpCode(''); setOtpError('') }}
+                      className="inline-flex items-center gap-2 text-base font-black text-gray-900 hover:text-gray-700 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                       </svg>
-                      <span>Loading</span>
-                    </>
-                  ) : (
-                    'Log In'
-                  )}
-                </button>
+                      Back to Login
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form id="signIn" onSubmit={handleSubmit} className="space-y-7 px-8">
+                  {/* Email */}
+                  <div>
+                    <label htmlFor="email" className="block text-base font-bold text-gray-900 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Mail className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@pp-diredawa.org"
+                        required
+                        className="w-full pl-11 px-4 py-3.5 border-2 rounded-lg outline-none placeholder-gray-400 font-light border-gray-900 focus:ring-[#059669] focus:border-[#059669] transition-all text-base"
+                      />
+                    </div>
+                  </div>
 
-                <div className="text-center mt-4">
-                  <a href="/" className="inline-flex items-center gap-2 text-base font-black text-gray-900 hover:text-gray-700 transition-colors">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back to Home
-                  </a>
-                </div>
+                  {/* Password */}
+                  <div>
+                    <label htmlFor="password" className="block text-base font-bold text-gray-900 mb-2">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        required
+                        className="w-full pl-11 px-4 py-3.5 pr-12 border-2 rounded-lg outline-none placeholder-gray-400 font-light border-gray-900 focus:ring-[#059669] focus:border-[#059669] transition-all text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 z-10"
+                      >
+                        {showPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g clipPath="url(#clip0_134_9019)">
+                              <path d="M7.78498 15.6516L6.17581 15.22L6.83165 12.7708C5.84995 12.4087 4.93758 11.8811 4.13415 11.2108L2.33998 13.0058L1.16081 11.8266L2.95581 10.0325C1.94254 8.81893 1.26172 7.3631 0.97998 5.80747L2.61998 5.5083C3.25248 9.00997 6.31581 11.6666 9.99998 11.6666C13.6833 11.6666 16.7475 9.00997 17.38 5.5083L19.02 5.80663C18.7386 7.36248 18.0581 8.81861 17.045 10.0325L18.8391 11.8266L17.66 13.0058L15.8658 11.2108C15.0624 11.8811 14.15 12.4087 13.1683 12.7708L13.8241 15.2208L12.215 15.6516L11.5583 13.2016C10.5269 13.3784 9.47302 13.3784 8.44165 13.2016L7.78498 15.6516Z" fill="currentColor"></path>
+                            </g>
+                            <defs>
+                              <clipPath id="clip0_134_9019"><rect width="20" height="20" rx="10" fill="white"></rect></clipPath>
+                            </defs>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g clipPath="url(#clip1_134_9019)">
+                              <path d="M7.78498 15.6516L6.17581 15.22L6.83165 12.7708C5.84995 12.4087 4.93758 11.8811 4.13415 11.2108L2.33998 13.0058L1.16081 11.8266L2.95581 10.0325C1.94254 8.81893 1.26172 7.3631 0.97998 5.80747L2.61998 5.5083C3.25248 9.00997 6.31581 11.6666 9.99998 11.6666C13.6833 11.6666 16.7475 9.00997 17.38 5.5083L19.02 5.80663C18.7386 7.36248 18.0581 8.81861 17.045 10.0325L18.8391 11.8266L17.66 13.0058L15.8658 11.2108C15.0624 11.8811 14.15 12.4087 13.1683 12.7708L13.8241 15.2208L12.215 15.6516L11.5583 13.2016C10.5269 13.3784 9.47302 13.3784 8.44165 13.2016L7.78498 15.6516Z" fill="currentColor"></path>
+                            </g>
+                            <defs>
+                              <clipPath id="clip1_134_9019"><rect width="20" height="20" rx="10" fill="white"></rect></clipPath>
+                            </defs>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
-              </form>
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="outline-none font-sans focus:outline-none overflow-x-hidden overflow-y-hidden text-ellipsis whitespace-nowrap inline-flex items-center gap-2 justify-center active:translate-y-px disabled:!cursor-not-allowed disabled:!opacity-50 md:px-16 px-5 py-3.5 text-base font-medium rounded-[10px] !w-full text-white bg-emerald-700 border-emerald-700 hover:bg-emerald-800 focus:ring-emerald-600 !py-3 sm:!py-3.5 text-lg font-semibold !bg-emerald-700 !border-emerald-700 hover:!bg-emerald-800 focus:!ring-emerald-600"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Loading</span>
+                      </>
+                    ) : (
+                      'Log In'
+                    )}
+                  </button>
+
+                  <div className="text-center mt-4">
+                    <a href="/" className="inline-flex items-center gap-2 text-base font-black text-gray-900 hover:text-gray-700 transition-colors">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                      </svg>
+                      Back to Home
+                    </a>
+                  </div>
+
+                </form>
+              )}
             </div>
           </div>
       </main>

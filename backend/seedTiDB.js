@@ -7,6 +7,8 @@ const SectorUnit = require('./models/SectorUnit');
 const MemberCategory = require('./models/MemberCategory');
 const SectorUnitCategory = require('./models/SectorUnitCategory');
 const LandingPageContent = require('./models/LandingPageContent');
+const LandingPageImage = require('./models/LandingPageImage');
+const News = require('./models/News');
 const User = require('./models/User');
 
 // ─── Sector data ──────────────────────────────────────────────────────────────
@@ -162,6 +164,149 @@ async function seedLandingContent() {
   console.log(`✅ ${count} landing page content keys seeded (${Object.keys(LANDING_CONTENT).length - count} already existed)`);
 }
 
+async function migrateNewsTable() {
+  await sequelize.query(`
+    CREATE TABLE IF NOT EXISTS news (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      content TEXT DEFAULT NULL,
+      image VARCHAR(500) DEFAULT NULL,
+      category VARCHAR(100) DEFAULT 'news',
+      is_active TINYINT(1) DEFAULT 1,
+      created_by INT DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  // Add language column if missing (model expects it)
+  const [colRows] = await sequelize.query(
+    "SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'news' AND COLUMN_NAME = 'language'"
+  );
+  if (colRows[0].cnt === 0) {
+    await sequelize.query("ALTER TABLE news ADD COLUMN language VARCHAR(10) DEFAULT 'en'");
+  }
+
+  console.log('✅ News table migration completed');
+}
+
+async function migrateLandingPageTables() {
+  await sequelize.query(`
+    CREATE TABLE IF NOT EXISTS landing_page_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) DEFAULT NULL,
+      description TEXT DEFAULT NULL,
+      image VARCHAR(500) NOT NULL,
+      category VARCHAR(50) DEFAULT 'gallery',
+      display_order INT DEFAULT 0,
+      is_active TINYINT(1) DEFAULT 1,
+      uploaded_by INT DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  const newColumns = [
+    { name: 'alt_text', type: 'VARCHAR(500) DEFAULT NULL' },
+    { name: 'is_featured', type: 'TINYINT(1) DEFAULT 0' },
+    { name: 'language', type: "VARCHAR(10) DEFAULT 'en'" },
+    { name: 'file_size', type: 'INT DEFAULT NULL' },
+    { name: 'image_width', type: 'INT DEFAULT NULL' },
+    { name: 'image_height', type: 'INT DEFAULT NULL' },
+    { name: 'thumbnail_small', type: 'VARCHAR(500) DEFAULT NULL' },
+    { name: 'thumbnail_medium', type: 'VARCHAR(500) DEFAULT NULL' },
+  ];
+
+  for (const col of newColumns) {
+    const [rows] = await sequelize.query(
+      `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'landing_page_images' AND COLUMN_NAME = ?`,
+      { replacements: [col.name] }
+    );
+    if (rows[0].cnt === 0) {
+      await sequelize.query(`ALTER TABLE landing_page_images ADD COLUMN \`${col.name}\` ${col.type}`);
+    }
+  }
+
+  const indexes = [
+    { name: 'idx_category', columns: ['category'] },
+    { name: 'idx_is_featured', columns: ['is_featured'] },
+    { name: 'idx_created_at', columns: ['created_at'] },
+  ];
+  for (const idx of indexes) {
+    try {
+      await sequelize.query(`CREATE INDEX ${idx.name} ON landing_page_images (${idx.columns.join(',')})`);
+    } catch (e) {
+      // index already exists
+    }
+  }
+
+  // Ensure category column is VARCHAR not ENUM (production data uses more categories than old ENUM)
+  try {
+    await sequelize.query("ALTER TABLE landing_page_images MODIFY category VARCHAR(100) DEFAULT 'gallery'");
+  } catch (e) {
+    // Already VARCHAR
+  }
+
+  console.log('✅ Landing page tables migration completed');
+}
+
+async function seedNews() {
+  console.log('\n--- News ---');
+  const admin = await User.findOne({ where: { email: 'admin@mcms.ddu' } });
+  const adminId = admin ? admin.id : null;
+  if (!adminId) { console.log('⚠️  Admin user not found, skipping news seed'); return; }
+
+  const articles = [
+    { title: 'Prosperity Party Dire Dawa Branch Launches New Membership Drive', content: 'The Prosperity Party Dire Dawa Branch Office has officially launched a comprehensive membership drive aimed at increasing community participation and strengthening the party\'s grassroots presence across all nine woredas and four rural clusters.', image: '', category: 'announcements', language: 'en', createdBy: adminId },
+    { title: 'የብልጽግና ፓርቲ ድሬዳዋ ቅርንጫፍ አዲስ የአባልነት መመዝገቢያ ዘመቻ አስጀመረ', content: 'የብልጽግና ፓርቲ ድሬዳዋ ቅርንጫፍ ቢሮ የማህበረሰቡን ተሳትፎ ለማሳደግ እና የፓርቲውን መሰረታዊ ተገኝነት በሁሉም ዘጠኝ ወረዳዎች እና አራት የገጠር ክላስተሮች ለማጠናከር ያለመ ሰፊ የአባልነት መመዝገቢያ ዘመቻ መጀመሩን አስታውቋል።', image: '', category: 'announcements', language: 'am', createdBy: adminId },
+    { title: 'Digital Transformation: New Membership Fee Management System Goes Live', content: 'The Prosperity Party Dire Dawa Branch Office has deployed a state-of-the-art Membership Fee Management System (MCMS) that digitizes member registration, fee collection, receipt generation, and financial reporting. The system supports both salary-based and non-salary member categories including youth and women wings.', image: '', category: 'news', language: 'en', createdBy: adminId },
+    { title: 'Community Development Forum Held in Woreda 3', content: 'A community development forum was held at Woreda 3 bringing together over 200 residents, party officials, and local leaders to discuss infrastructure projects, social services, and economic development initiatives for the coming fiscal year.', image: '', category: 'community', language: 'en', createdBy: adminId },
+    { title: 'Youth Wing Leadership Training Concludes Successfully', content: 'The Employee Youth Wing and Resident Youth Wing members participated in a week-long leadership training program focused on organizational skills, community engagement, and the role of youth in political processes. Over 150 youth members completed the training.', image: '', category: 'training', language: 'en', createdBy: adminId },
+    { title: 'Women Wing Empowerment Program Expands to Rural Clusters', content: 'The Prosperity Party Women Wing has expanded its empowerment program to all four rural clusters (Biyyo Awwalle, Wahel, Aseliso, and Jeldessa), providing training in financial literacy, entrepreneurship, and leadership skills to women members.', image: '', category: 'community', language: 'en', createdBy: adminId },
+    { title: 'Quarterly Financial Report Now Available for Member Review', content: 'The Finance and Economic Development Bureau has published the quarterly membership fee collection and expenditure report. Members can view the report through the MCMS dashboard. The report covers all 23 institutions, 9 urban woredas, and 4 rural clusters.', image: '', category: 'announcements', language: 'en', createdBy: adminId },
+  ];
+
+  let count = 0;
+  for (const a of articles) {
+    const exists = await News.findOne({ where: { title: a.title } });
+    if (!exists) {
+      await News.create(a);
+      count++;
+    }
+  }
+  console.log(`✅ ${count} news articles seeded (${articles.length - count} already existed)`);
+}
+
+async function seedGallery() {
+  console.log('\n--- Gallery Images ---');
+  const admin = await User.findOne({ where: { email: 'admin@mcms.ddu' } });
+  const adminId = admin ? admin.id : null;
+  if (!adminId) { console.log('⚠️  Admin user not found, skipping gallery seed'); return; }
+
+  const images = [
+    { title: 'Prosperity Party Dire Dawa Branch Office Building', image: '/images/placeholder-building.jpg', category: 'office_building', language: 'en', isActive: true, uploadedBy: adminId },
+    { title: 'የብልጽግና ፓርቲ ድሬዳዋ ቅርንጫፍ ቢሮ', image: '/images/placeholder-building.jpg', category: 'office_building', language: 'am', isActive: true, uploadedBy: adminId },
+    { title: 'Community Engagement Forum at Woreda 5', image: '/images/placeholder-event.jpg', category: 'community', language: 'en', isActive: true, uploadedBy: adminId },
+    { title: 'Leadership Training Session - Youth Wing', image: '/images/placeholder-training.jpg', category: 'training', language: 'en', isActive: true, uploadedBy: adminId },
+    { title: 'Annual General Meeting 2025', image: '/images/placeholder-event.jpg', category: 'events', language: 'en', isActive: true, uploadedBy: adminId },
+    { title: 'Office Building - Main Entrance', image: '/images/placeholder-building.jpg', category: 'office_building', language: 'en', isFeatured: true, isActive: true, uploadedBy: adminId },
+    { title: 'Women Wing Empowerment Workshop', image: '/images/placeholder-training.jpg', category: 'training', language: 'en', isActive: true, uploadedBy: adminId },
+    { title: 'Dire Dawa City Panorama', image: '/images/placeholder-scenery.jpg', category: 'gallery', language: 'en', isFeatured: true, isActive: true, uploadedBy: adminId },
+  ];
+
+  let count = 0;
+  for (const img of images) {
+    const exists = await LandingPageImage.findOne({ where: { title: img.title, image: img.image } });
+    if (!exists) {
+      await LandingPageImage.create(img);
+      count++;
+    }
+  }
+  console.log(`✅ ${count} gallery images seeded (${images.length - count} already existed)`);
+}
+
 async function seedUsers() {
   console.log('\n--- Users ---');
   const usersToCreate = [
@@ -189,9 +334,24 @@ async function main() {
     await connectDB();
     await sequelize.sync({ alter: false });
 
+    // Migrate wingType column from ENUM to STRING (TiDB limitation: can't use alter:true)
+    try {
+      await sequelize.query("ALTER TABLE `members` MODIFY `wingType` VARCHAR(100) DEFAULT NULL;");
+      console.log('✅ wingType column migrated');
+    } catch (e) {
+      // Column may already be VARCHAR — that's fine
+      if (!e.message?.includes('Duplicate')) console.log('ℹ️  wingType migration:', e.message);
+    }
+
+    // Migrate news and gallery tables
+    try { await migrateNewsTable(); } catch (e) { console.log('ℹ️  News migration:', e.message); }
+    try { await migrateLandingPageTables(); } catch (e) { console.log('ℹ️  Landing pages migration:', e.message); }
+
     await ensureSectorStructure();
-    await seedLandingContent();
     await seedUsers();
+    await seedLandingContent();
+    await seedNews();
+    await seedGallery();
 
     console.log('\n🎉 TiDB Cloud seeding completed successfully!');
     console.log('\n🔐 Login Credentials:');

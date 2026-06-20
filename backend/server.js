@@ -306,6 +306,13 @@ const start = async () => {
     console.error('⚠️ User role enum migration error:', e.message);
   }
 
+  // ── Add OTP fields to User table ──────────────────────────────────────────
+  try {
+    await require('./migrations/alter_user_otp')();
+  } catch (e) {
+    console.error('⚠️ User OTP migration error:', e.message);
+  }
+
   // Always seed essential users in production (safe — skips existing users)
   if (isProduction) {
     setTimeout(seedInitialUsers, 3000);

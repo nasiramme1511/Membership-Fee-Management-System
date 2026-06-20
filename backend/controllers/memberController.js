@@ -113,8 +113,13 @@ exports.createMember = async (req, res) => {
       } 
     });
     if (existing) {
-      const matchedBy = existing.fullName === memberData.fullName ? `name '${memberData.fullName}'` : `phone '${memberData.phone}'`;
-      return res.status(400).json({ success: false, message: `A member with this ${matchedBy} already exists.` });
+      const matchedBy = existing.fullName === memberData.fullName
+        ? `the name "${memberData.fullName}"`
+        : `the phone number "${memberData.phone}"`;
+      return res.status(409).json({
+        success: false,
+        message: `Duplicate record detected. A member with ${matchedBy} is already registered in the system (ID: ${existing.memberId || existing.id}). Please verify the information and try again.`
+      });
     }
 
     const flat = flattenMemberData({
@@ -533,9 +538,13 @@ exports.bulkAppendMembers = async (req, res) => {
       }
     }
 
+    const totalRequested = members.length;
+    const totalCreated = createdMembers.length;
+    const totalSkipped = skipped.length;
+    const totalErrors = errors.length;
     res.status(201).json({
       success: true,
-      message: `Successfully added ${createdMembers.length} members. ${skipped.length} skipped as duplicates.`,
+      message: `Batch processing complete. ${totalCreated} of ${totalRequested} member${totalRequested > 1 ? 's' : ''} registered successfully.${totalSkipped > 0 ? ` ${totalSkipped} duplicate${totalSkipped > 1 ? 's' : ''} identified and skipped.` : ''}${totalErrors > 0 ? ` ${totalErrors} row${totalErrors > 1 ? 's' : ''} encountered errors.` : ''}`,
       data: createdMembers,
       errors: errors.length > 0 ? errors : undefined,
       skipped: skipped.length > 0 ? skipped : undefined

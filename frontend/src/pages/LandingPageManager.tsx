@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import api from '../lib/api'
 import PageLoader from '../components/PageLoader'
+import { useToast } from '../components/Toast'
 
 interface LandingImage {
   id: number
@@ -109,7 +110,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState('images')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -151,7 +152,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
       if (imagesRes.data.success) setImages(imagesRes.data.data)
     } catch (err: any) {
       console.error('[LandingPageManager] fetch error:', err)
-      showMessage('error', err?.response?.data?.message || 'Failed to load data')
+      toast.error('Load Failed', err?.response?.data?.message || 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -167,18 +168,14 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
     return cleanup
   }, [categoryFilter, searchQuery, sortOrder])
 
-  const showMessage = (type: string, text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage({ type: '', text: '' }), 5000)
-  }
-
   const handleUpload = async () => {
     if (!fileRef.current?.files?.length) {
-      showMessage('error', 'Please select an image file')
+      toast.error('Validation Error', 'Please select an image file')
       return
     }
     setUploading(true)
     setUploadProgress(0)
+    const toastId = toast.loading('Uploading Image...', 'Please wait while the image uploads.')
     try {
       const formData = new FormData()
       formData.append('image', fileRef.current.files[0])
@@ -198,14 +195,14 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
         }
       })
       if (res.data.success) {
-        showMessage('success', 'Image uploaded successfully')
+        toast.update(toastId, 'success', 'Upload Complete', 'Image uploaded successfully')
         setUploadForm({ title: '', altText: '', description: '', category: 'gallery', isFeatured: false, language: 'en' })
         if (fileRef.current) fileRef.current.value = ''
         setPreviewUrl(null)
         fetchData()
       }
     } catch (err: any) {
-      showMessage('error', err.response?.data?.message || 'Upload failed')
+      toast.update(toastId, 'error', 'Upload Failed', err.response?.data?.message || 'Upload failed')
     } finally {
       setUploading(false)
       setUploadProgress(0)
@@ -214,43 +211,46 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
 
   const handleDeleteImage = async (id: number) => {
     if (!confirm('Delete this image? This cannot be undone.')) return
+    const toastId = toast.loading('Deleting Image...', 'Removing image from the gallery.')
     try {
       const res = await api.delete(`/landing/images/${id}`)
       if (res.data.success) {
-        showMessage('success', 'Image deleted')
+        toast.update(toastId, 'success', 'Deleted', 'Image deleted')
         setSelectedIds(prev => { const s = new Set(prev); s.delete(id); return s })
         fetchData()
       }
     } catch (err) {
-      showMessage('error', 'Delete failed')
+      toast.update(toastId, 'error', 'Delete Failed', 'Delete failed')
     }
   }
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     if (!confirm(`Delete ${selectedIds.size} selected image(s)? This cannot be undone.`)) return
+    const toastId = toast.loading(`Deleting ${selectedIds.size} Images...`, 'Removing selected images from the gallery.')
     try {
       const res = await api.post('/landing/images/bulk-delete', { ids: Array.from(selectedIds) })
       if (res.data.success) {
-        showMessage('success', `${selectedIds.size} image(s) deleted`)
+        toast.update(toastId, 'success', 'Bulk Delete Complete', `${selectedIds.size} image(s) deleted`)
         setSelectedIds(new Set())
         fetchData()
       }
     } catch (err) {
-      showMessage('error', 'Bulk delete failed')
+      toast.update(toastId, 'error', 'Bulk Delete Failed', 'Bulk delete failed')
     }
   }
 
   const handleSaveContent = async () => {
     setSaving(true)
+    const toastId = toast.loading('Saving Content...', 'Applying changes to the landing page.')
     try {
       const res = await api.put('/landing/content', { updates: editContent })
       if (res.data.success) {
         setContent(res.data.data)
-        showMessage('success', 'Content updated successfully. Changes are live.')
+        toast.update(toastId, 'success', 'Content Saved', 'Content updated successfully. Changes are live.')
       }
     } catch (err: any) {
-      showMessage('error', err.response?.data?.message || 'Save failed')
+      toast.update(toastId, 'error', 'Save Failed', err.response?.data?.message || 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -267,20 +267,20 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
   const toggleActive = async (img: LandingImage) => {
     try {
       await api.put(`/landing/images/${img.id}`, { isActive: !img.isActive })
-      showMessage('success', `Image ${img.isActive ? 'deactivated' : 'activated'}`)
+      toast.success('Status Updated', `Image ${img.isActive ? 'deactivated' : 'activated'}`)
       fetchData()
     } catch {
-      showMessage('error', 'Update failed')
+      toast.error('Update Failed', 'Update failed')
     }
   }
 
   const toggleFeatured = async (img: LandingImage) => {
     try {
       await api.put(`/landing/images/${img.id}`, { isFeatured: !img.isFeatured })
-      showMessage('success', `Image ${img.isFeatured ? 'removed from' : 'set as'} featured`)
+      toast.success('Status Updated', `Image ${img.isFeatured ? 'removed from' : 'set as'} featured`)
       fetchData()
     } catch {
-      showMessage('error', 'Update failed')
+      toast.error('Update Failed', 'Update failed')
     }
   }
 
@@ -301,7 +301,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      showMessage('error', 'Download failed')
+      toast.error('Download Failed', 'Download failed')
     }
   }
 
@@ -333,11 +333,11 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
         isFeatured: editingImage.isFeatured,
         language: editingImage.language,
       })
-      showMessage('success', 'Image metadata updated')
+      toast.success('Metadata Updated', 'Image metadata updated')
       setEditingImage(null)
       fetchData()
     } catch {
-      showMessage('error', 'Update failed')
+      toast.error('Update Failed', 'Update failed')
     }
   }
 
@@ -375,28 +375,6 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
           </div>
         </div>
       )}
-
-      {/* Notification */}
-      <AnimatePresence>
-        {message.text && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -20, height: 0 }}
-            className={`p-4 rounded-lg flex items-center gap-3 ${
-              message.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-            }`}
-          >
-            {message.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-            <span className="text-sm">{message.text}</span>
-            <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto">
-              <X className="w-4 h-4 opacity-50 hover:opacity-100" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">

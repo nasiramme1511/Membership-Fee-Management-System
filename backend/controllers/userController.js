@@ -3,6 +3,8 @@ const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const User = require('../models/User');
+const { sendEmail } = require('../utils/emailService');
+const emailValidator = require('deep-email-validator');
 
 // ─── Admin: Get all users ─────────────────────────────────────────────────────
 exports.getAllUsers = async (req, res) => {
@@ -37,6 +39,23 @@ exports.createUser = async (req, res) => {
   try {
     const { username, email, password, fullName, role, sectorUnitId, isActive } = req.body;
 
+    // Verify email actually exists
+    const emailCheck = await emailValidator.validate({
+      email: email,
+      validateRegex: true,
+      validateMx: true,
+      validateTypo: true,
+      validateDisposable: true,
+      validateSMTP: true,
+    });
+
+    if (!emailCheck.valid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a real, existing email address. This email appears to be invalid or does not exist.'
+      });
+    }
+
     const existing = await User.findOne({
       where: { [Op.or]: [{ email: email.toLowerCase() }, { username }] }
     });
@@ -50,6 +69,22 @@ exports.createUser = async (req, res) => {
       sectorUnitId: sectorUnitId || null,
       isActive: isActive !== undefined ? isActive : true
     });
+
+    // Send Welcome Email synchronously to verify email is real
+    const emailResult = await sendEmail({
+      to: email,
+      subject: 'Account Created - Prosperity Party Dire Dawa',
+      text: `Hello ${fullName},\n\nAn admin has created an account for you on the Prosperity Party Dire Dawa Membership Fee App!\nYour username is: ${username}.\nYour password is: ${password}\n\nPlease login and change your password.\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${fullName},</h3><p>An admin has created an account for you on the <strong>Prosperity Party Dire Dawa Membership Fee App</strong>!</p><p>Your username is: <strong>${username}</strong></p><p>Your temporary password is: <strong>${password}</strong></p><p>Please login and change your password as soon as possible.</p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
+    if (!emailResult.success) {
+      await user.destroy();
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to create user. The email address provided does not appear to be real or reachable.'
+      });
+    }
 
     const fresh = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },

@@ -377,9 +377,12 @@ exports.importMembers = async (req, res) => {
       results.success = 0;
     }
 
+    const skippedDueToDuplicates = results.duplicates.length;
+    const failedWithErrors = results.errors.length;
+    const totalProcessed = data.length;
     res.json({
       success: true,
-      message: `Import completed: ${results.success} members imported`,
+      message: `Import completed. ${results.success} of ${totalProcessed} record${totalProcessed > 1 ? 's' : ''} imported successfully.${skippedDueToDuplicates > 0 ? ` ${skippedDueToDuplicates} duplicate${skippedDueToDuplicates > 1 ? 's' : ''} identified and skipped.` : ''}${failedWithErrors > 0 ? ` ${failedWithErrors} row${failedWithErrors > 1 ? 's' : ''} failed validation.` : ''}`,
       data: { totalRows: data.length, success: results.success, errors: results.errors, warnings: results.warnings, duplicates: results.duplicates }
     });
   } catch (error) {
