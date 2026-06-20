@@ -46,7 +46,7 @@ exports.createUser = async (req, res) => {
       validateMx: true,
       validateTypo: true,
       validateDisposable: true,
-      validateSMTP: true,
+      validateSMTP: false,
     });
 
     if (!emailCheck.valid) {
@@ -70,21 +70,13 @@ exports.createUser = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true
     });
 
-    // Send Welcome Email synchronously to verify email is real
-    const emailResult = await sendEmail({
+    // Send Welcome Email (non-blocking — don't fail if email fails)
+    sendEmail({
       to: email,
       subject: 'Account Created - Prosperity Party Dire Dawa',
       text: `Hello ${fullName},\n\nAn admin has created an account for you on the Prosperity Party Dire Dawa Membership Fee App!\nYour username is: ${username}.\nYour password is: ${password}\n\nPlease login and change your password.\n\nBest regards,\nAdmin Team`,
       html: `<h3>Hello ${fullName},</h3><p>An admin has created an account for you on the <strong>Prosperity Party Dire Dawa Membership Fee App</strong>!</p><p>Your username is: <strong>${username}</strong></p><p>Your temporary password is: <strong>${password}</strong></p><p>Please login and change your password as soon as possible.</p><br><p>Best regards,<br>Admin Team</p>`
     });
-
-    if (!emailResult.success) {
-      await user.destroy();
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to create user. The email address provided does not appear to be real or reachable.'
-      });
-    }
 
     const fresh = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },

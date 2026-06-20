@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
       validateMx: true,
       validateTypo: true,
       validateDisposable: true,
-      validateSMTP: true,
+      validateSMTP: false,
     });
 
     if (!emailCheck.valid) {
@@ -63,22 +63,13 @@ exports.register = async (req, res) => {
       otpExpiresAt
     });
 
-    // Send Welcome Email synchronously to verify email is real
-    const emailResult = await sendEmail({
+    // Send Welcome Email (non-blocking — don't fail if email fails)
+    sendEmail({
       to: email,
       subject: 'Verify your account - Prosperity Party Dire Dawa',
       text: `Hello ${fullName},\n\nWelcome to the Prosperity Party Dire Dawa Membership Fee App!\nYour verification code is: ${otpCode}\n\nPlease enter this code to activate your account. The code expires in 15 minutes.\n\nBest regards,\nAdmin Team`,
       html: `<h3>Hello ${fullName},</h3><p>Welcome to the <strong>Prosperity Party Dire Dawa Membership Fee App</strong>!</p><h2>Your verification code is: <span style="color:#007BFF">${otpCode}</span></h2><p>Please enter this code on the verification screen to activate your account. The code expires in 15 minutes.</p><br><p>Best regards,<br>Admin Team</p>`
     });
-
-    if (!emailResult.success) {
-      // Rollback user creation if email fails
-      await user.destroy();
-      return res.status(400).json({
-        success: false,
-        message: 'Registration failed. Please provide a real, working email address.'
-      });
-    }
 
     res.status(201).json({
       success: true,
