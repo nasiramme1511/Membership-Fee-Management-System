@@ -4,6 +4,17 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 
+function readFileAsDataUrl(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const buffer = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase().replace('.', '');
+    const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
+    const mime = mimeMap[ext] || 'image/jpeg';
+    return { data: `data:${mime};base64,${buffer.toString('base64')}`, mime };
+  } catch { return null; }
+}
+
 const newsUploadsDir = path.join(__dirname, '..', 'uploads', 'news');
 if (!fs.existsSync(newsUploadsDir)) {
   fs.mkdirSync(newsUploadsDir, { recursive: true });
@@ -84,14 +95,20 @@ exports.create = async (req, res) => {
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
 
     let image = null;
+    let imageData = null;
+    let imageMimeType = null;
     if (req.file) {
       image = '/uploads/news/' + req.file.filename;
+      const result = readFileAsDataUrl(req.file.path);
+      if (result) { imageData = result.data; imageMimeType = result.mime; }
     }
 
     const news = await News.create({
       title,
       content: content || '',
       image,
+      imageData,
+      imageMimeType,
       category: category || 'news',
       language: language || 'en',
       createdBy: req.userId
@@ -122,6 +139,8 @@ exports.update = async (req, res) => {
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       news.image = '/uploads/news/' + req.file.filename;
+      const result = readFileAsDataUrl(req.file.path);
+      if (result) { news.imageData = result.data; news.imageMimeType = result.mime; }
     }
 
     await news.save();

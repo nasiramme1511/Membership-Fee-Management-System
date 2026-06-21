@@ -173,6 +173,7 @@ async function migrateNewsTable() {
       image VARCHAR(500) DEFAULT NULL,
       category VARCHAR(100) DEFAULT 'news',
       is_active TINYINT(1) DEFAULT 1,
+      language VARCHAR(10) DEFAULT 'en',
       created_by INT DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -180,12 +181,19 @@ async function migrateNewsTable() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
-  // Add language column if missing (model expects it)
-  const [colRows] = await sequelize.query(
-    "SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'news' AND COLUMN_NAME = 'language'"
-  );
-  if (colRows[0].cnt === 0) {
-    await sequelize.query("ALTER TABLE news ADD COLUMN language VARCHAR(10) DEFAULT 'en'");
+  const newColumns = [
+    { name: 'image_data', type: 'LONGTEXT DEFAULT NULL' },
+    { name: 'image_mime_type', type: 'VARCHAR(50) DEFAULT NULL' },
+  ];
+
+  for (const col of newColumns) {
+    const [rows] = await sequelize.query(
+      `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'news' AND COLUMN_NAME = ?`,
+      { replacements: [col.name] }
+    );
+    if (rows[0].cnt === 0) {
+      await sequelize.query(`ALTER TABLE news ADD COLUMN \`${col.name}\` ${col.type}`);
+    }
   }
 
   console.log('✅ News table migration completed');
@@ -217,6 +225,10 @@ async function migrateLandingPageTables() {
     { name: 'image_height', type: 'INT DEFAULT NULL' },
     { name: 'thumbnail_small', type: 'VARCHAR(500) DEFAULT NULL' },
     { name: 'thumbnail_medium', type: 'VARCHAR(500) DEFAULT NULL' },
+    { name: 'image_data', type: 'LONGTEXT DEFAULT NULL' },
+    { name: 'image_mime_type', type: 'VARCHAR(50) DEFAULT NULL' },
+    { name: 'thumbnail_small_data', type: 'LONGTEXT DEFAULT NULL' },
+    { name: 'thumbnail_medium_data', type: 'LONGTEXT DEFAULT NULL' },
   ];
 
   for (const col of newColumns) {

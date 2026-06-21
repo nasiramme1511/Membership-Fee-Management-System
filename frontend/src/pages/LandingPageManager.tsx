@@ -10,6 +10,7 @@ import {
 import api from '../lib/api'
 import PageLoader from '../components/PageLoader'
 import { useToast } from '../components/Toast'
+import { getImageSrc, getThumbSrc } from '../utils/imageUtils'
 
 interface LandingImage {
   id: number
@@ -17,8 +18,11 @@ interface LandingImage {
   altText: string
   description: string
   image: string
+  imageData?: string
   thumbnailSmall: string
+  thumbnailSmallData?: string
   thumbnailMedium: string
+  thumbnailMediumData?: string
   category: string
   displayOrder: number
   isActive: boolean
@@ -491,7 +495,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
                   >
                     <div className="aspect-video relative overflow-hidden">
                       <img
-                        src={img.thumbnailMedium || img.image}
+                        src={getThumbSrc(img)}
                         alt={img.altText || img.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                         onClick={() => setPreviewModal(img)}
@@ -584,7 +588,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
                         onChange={() => toggleSelect(img.id)} className="rounded" />
                     </div>
                     <div className="w-12 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                      <img src={img.thumbnailSmall || img.image} alt={img.altText || img.title}
+                      <img src={getThumbSrc(img)} alt={img.altText || img.title}
                         className="w-full h-full object-cover cursor-pointer" onClick={() => setPreviewModal(img)} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -837,7 +841,7 @@ export default function LandingPageManager({ isComponent = false }: { isComponen
               onClick={e => e.stopPropagation()}
             >
               <div className="relative">
-                <img src={previewModal.image} alt={previewModal.altText || previewModal.title}
+                <img src={getImageSrc(previewModal)} alt={previewModal.altText || previewModal.title}
                   className="w-full max-h-[60vh] object-contain bg-gray-100 dark:bg-gray-800" />
                 <button onClick={() => setPreviewModal(null)}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors">

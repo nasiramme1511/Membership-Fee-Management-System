@@ -35,6 +35,10 @@ module.exports = async () => {
       { name: 'image_height', type: 'INT DEFAULT NULL' },
       { name: 'thumbnail_small', type: 'VARCHAR(500) DEFAULT NULL' },
       { name: 'thumbnail_medium', type: 'VARCHAR(500) DEFAULT NULL' },
+      { name: 'image_data', type: 'LONGTEXT DEFAULT NULL' },
+      { name: 'image_mime_type', type: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'thumbnail_small_data', type: 'LONGTEXT DEFAULT NULL' },
+      { name: 'thumbnail_medium_data', type: 'LONGTEXT DEFAULT NULL' },
     ];
 
     for (const col of newColumns) {

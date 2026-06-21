@@ -19,6 +19,16 @@ const News = sequelize.define('News', {
     type: DataTypes.STRING(500),
     allowNull: true
   },
+  imageData: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    field: 'image_data'
+  },
+  imageMimeType: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'image_mime_type'
+  },
   category: {
     type: DataTypes.STRING(100),
     defaultValue: 'news'

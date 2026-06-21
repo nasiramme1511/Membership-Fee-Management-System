@@ -24,15 +24,35 @@ const LandingPageImage = sequelize.define('LandingPageImage', {
     type: DataTypes.STRING(500),
     allowNull: false
   },
+  imageData: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    field: 'image_data'
+  },
+  imageMimeType: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'image_mime_type'
+  },
   thumbnailSmall: {
     type: DataTypes.STRING(500),
     allowNull: true,
     field: 'thumbnail_small'
   },
+  thumbnailSmallData: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    field: 'thumbnail_small_data'
+  },
   thumbnailMedium: {
     type: DataTypes.STRING(500),
     allowNull: true,
     field: 'thumbnail_medium'
+  },
+  thumbnailMediumData: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true,
+    field: 'thumbnail_medium_data'
   },
   category: {
     type: DataTypes.STRING(50),

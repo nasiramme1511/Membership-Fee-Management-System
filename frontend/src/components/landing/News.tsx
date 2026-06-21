@@ -4,6 +4,7 @@ import { Calendar, Bell, Users, ChevronRight, Award, ArrowRight } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../lib/api';
+import { getImageSrc } from '../../utils/imageUtils';
 
 interface NewsItem {
   id: string | number;
@@ -12,6 +13,7 @@ interface NewsItem {
   category: string;
   date: string;
   image?: string;
+  imageData?: string;
 }
 
 interface NewsProps {
@@ -36,7 +38,8 @@ export default function News({ galleryImages }: NewsProps) {
             description: item.content,
             category: item.category || 'News',
             date: new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
-            image: item.image
+            image: item.image,
+            imageData: item.imageData
           })));
         }
       } catch (err) {
@@ -103,7 +106,7 @@ export default function News({ galleryImages }: NewsProps) {
               <div className="[transform-style:preserve-3d]">
                 <div className="aspect-video relative overflow-hidden bg-gray-100 dark:bg-slate-800">
                   <img
-                    src={item.image || '/pp-logo.png'}
+                    src={getImageSrc(item)}
                     alt={item.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => { (e.target as HTMLImageElement).src = '/pp-logo.png'; }}

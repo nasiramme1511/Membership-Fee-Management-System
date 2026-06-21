@@ -9,6 +9,7 @@ import GallerySection from '../components/landing/Gallery';
 import NewsSection from '../components/landing/News';
 import ContactSection from '../components/landing/Contact';
 import PageLoader from '../components/PageLoader';
+import { getImageSrc } from '../utils/imageUtils';
 
 export default function Landing() {
   const { t } = useTranslation();
@@ -52,7 +53,7 @@ export default function Landing() {
   const featuredImages = galleryImages.filter((i: any) => i.isFeatured);
   const heroImages = galleryImages.filter((i: any) => i.category === 'hero');
   const heroFeatured = featuredImages.length > 0 ? featuredImages[0] : null;
-  const heroBg = heroFeatured ? heroFeatured.image : (heroImages.length > 0 ? heroImages[0].image : '/photos/leadership.jpg');
+  const heroBg = heroFeatured ? getImageSrc(heroFeatured) : (heroImages.length > 0 ? getImageSrc(heroImages[0]) : '/photos/leadership.jpg');
   const aboutImg = '/about1.png';
 
   return (
