@@ -1,13 +1,19 @@
 const nodemailer = require('nodemailer');
+const net = require('net');
+const dns = require('dns');
+
+// Force IPv4 DNS resolution globally — required for Render free tier
+// which does NOT support outbound IPv6 (addresses like 2607:f8b0:... get blocked)
+dns.setDefaultResultOrder('ipv4first');
 
 const createTransporter = () => {
-  const port = parseInt(process.env.SMTP_PORT) || 465;
-  const isSecure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
-  // Google App Passwords are displayed with spaces (e.g. "abcd efgh ijkl mnop")
-  // but the actual password must NOT have spaces. Strip them to be safe.
+  const port = parseInt(process.env.SMTP_PORT) || 587;
+  // Port 465 uses implicit SSL, port 587 uses STARTTLS.
+  // We switch to 587 because Render free tier has better support for it.
+  const isSecure = port === 465;
   const smtpPass = (process.env.SMTP_PASS || '').replace(/\s/g, '');
 
-  console.log(`[EmailService] Creating transporter: host=${process.env.SMTP_HOST} port=${port} secure=${isSecure} user=${process.env.SMTP_USER}`);
+  console.log(`[EmailService] Creating transporter: host=${process.env.SMTP_HOST || 'smtp.gmail.com'} port=${port} secure=${isSecure} user=${process.env.SMTP_USER}`);
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -18,9 +24,10 @@ const createTransporter = () => {
       pass: smtpPass
     },
     tls: {
-      // Do not fail on invalid/self-signed certs in cloud environments
       rejectUnauthorized: false
-    }
+    },
+    // Force IPv4 — critical for Render which blocks outbound IPv6
+    family: 4
   });
 };
 
@@ -34,13 +41,11 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
     const transporter = createTransporter();
 
-    // Verify connection before sending (helps catch config issues early)
     try {
       await transporter.verify();
       console.log('[EmailService] SMTP connection verified successfully.');
     } catch (verifyErr) {
       console.error('[EmailService] SMTP connection verification FAILED:', verifyErr.message);
-      // Still attempt to send — some servers reject EHLO during verify but accept AUTH
     }
 
     const mailOptions = {
