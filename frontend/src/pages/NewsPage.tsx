@@ -5,12 +5,14 @@ import FacebookFeed from '../components/FacebookFeed';
 import api from '../lib/api';
 import PageHero from '../components/landing/PageHero';
 import PageLoader from '../components/PageLoader';
+import { getImageSrc } from '../utils/imageUtils';
 
 interface NewsItem {
   id: number;
   title: string;
   content: string;
   image: string | null;
+  imageData?: string;
   category: string;
   createdAt: string;
 }
@@ -94,10 +96,10 @@ export default function NewsPage() {
                         {item.image && (
                           <div className="w-full h-48 flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-slate-800">
                             <img
-                              src={item.image}
+                              src={getImageSrc(item)}
                               alt={item.title}
                               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 cursor-pointer"
-                              onClick={() => item.image && setSelectedImage(item.image)}
+                              onClick={() => setSelectedImage(getImageSrc(item))}
                               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           </div>

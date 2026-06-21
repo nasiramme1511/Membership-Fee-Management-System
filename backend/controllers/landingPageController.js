@@ -24,6 +24,17 @@ function thumbUrl(dir, filename) {
   return '/uploads/landing/' + dir + '/' + filename;
 }
 
+function readFileAsDataUrl(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const buffer = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase().replace('.', '');
+    const mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
+    const mime = mimeMap[ext] || 'image/jpeg';
+    return { data: `data:${mime};base64,${buffer.toString('base64')}`, mime };
+  } catch { return null; }
+}
+
 exports.getPublicContent = async (req, res) => {
   try {
     const entries = await LandingPageContent.findAll();
@@ -165,13 +176,21 @@ exports.uploadImage = async (req, res) => {
       console.warn('⚠️ Sharp processing skipped:', sharpErr.message);
     }
 
+    const imgDataResult = readFileAsDataUrl(filePath);
+    const thumbSmallDataResult = thumbSmallPath ? readFileAsDataUrl(path.join(thumbsSmallDir, 'sm_' + filename)) : null;
+    const thumbMediumDataResult = thumbMediumPath ? readFileAsDataUrl(path.join(thumbsMediumDir, 'md_' + filename)) : null;
+
     const image = await LandingPageImage.create({
       title: req.body.title || '',
       altText: req.body.altText || '',
       description: req.body.description || '',
       image: imageUrl(filename),
+      imageData: imgDataResult?.data || null,
+      imageMimeType: imgDataResult?.mime || null,
       thumbnailSmall: thumbSmallPath,
+      thumbnailSmallData: thumbSmallDataResult?.data || null,
       thumbnailMedium: thumbMediumPath,
+      thumbnailMediumData: thumbMediumDataResult?.data || null,
       category: req.body.category || 'gallery',
       displayOrder: req.body.displayOrder || 0,
       isFeatured: req.body.isFeatured === 'true' || req.body.isFeatured === true,
@@ -282,9 +301,17 @@ exports.replaceImage = async (req, res) => {
       console.warn('⚠️ Sharp processing skipped:', sharpErr.message);
     }
 
+    const imgDataResult = readFileAsDataUrl(filePath);
+    const thumbSmallDataResult = thumbSmallPath ? readFileAsDataUrl(path.join(thumbsSmallDir, 'sm_' + filename)) : null;
+    const thumbMediumDataResult = thumbMediumPath ? readFileAsDataUrl(path.join(thumbsMediumDir, 'md_' + filename)) : null;
+
     image.image = imageUrl(filename);
+    image.imageData = imgDataResult?.data || null;
+    image.imageMimeType = imgDataResult?.mime || null;
     image.thumbnailSmall = thumbSmallPath;
+    image.thumbnailSmallData = thumbSmallDataResult?.data || null;
     image.thumbnailMedium = thumbMediumPath;
+    image.thumbnailMediumData = thumbMediumDataResult?.data || null;
     image.fileSize = metadata.size;
     image.imageWidth = metadata.width;
     image.imageHeight = metadata.height;

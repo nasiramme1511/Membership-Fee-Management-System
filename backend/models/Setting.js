@@ -49,6 +49,7 @@ const DEFAULT_CONTRIBUTION_RULES = {
   fixedFees: {
     student:     1,
     farmer:      5,
+    resident:    5,
     pastoralist: 5,
     labor:       5,
     informal:    5

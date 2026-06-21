@@ -3,12 +3,16 @@ import { motion as m, AnimatePresence as Ap } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getImageSrc, getThumbSrc } from '../../utils/imageUtils';
 
 interface GalleryImage {
   id: number | string;
   title: string;
   description: string;
   image: string;
+  imageData?: string;
+  thumbnailMediumData?: string;
+  thumbnailSmallData?: string;
   category: string;
   isActive?: boolean;
 }
@@ -161,7 +165,7 @@ export default function Gallery({ galleryImages, hideTitle = false, compact = fa
               >
                 <div className="w-full h-full relative">
                   <img
-                    src={img.image}
+                    src={getImageSrc(img)}
                     alt={img.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"

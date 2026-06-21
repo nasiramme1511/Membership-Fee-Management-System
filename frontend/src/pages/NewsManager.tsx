@@ -4,12 +4,14 @@ import { Plus, Edit3, Trash2, X, Save, Image as ImageIcon, Calendar, Loader2 } f
 import api from '../lib/api'
 import PageLoader from '../components/PageLoader'
 import { useToast } from '../components/Toast'
+import { getImageSrc } from '../utils/imageUtils'
 
 interface NewsItem {
   id: number
   title: string
   content: string
   image: string | null
+  imageData?: string
   category: string
   language: string
   isActive: number
@@ -212,7 +214,7 @@ export default function NewsManager({ isComponent = false }: { isComponent?: boo
             <motion.div key={item.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 shadow-sm rounded-2xl p-5 flex items-start gap-4 group hover:border-[#0B5D3B] hover:shadow-md transition-all">
               <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-800 flex-shrink-0">
                 {item.image ? (
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                  <img src={getImageSrc(item)} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
                     <ImageIcon className="w-8 h-8" />

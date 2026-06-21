@@ -76,7 +76,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   useEffect(() => {
     if (selectedSectorId) {
       api.get(`/sectors/${selectedSectorId}/categories`).then(res => {
-        setAvailableCategories(res.data.filter((c: any) => !c.name.toLowerCase().includes('student')));
+        setAvailableCategories(res.data);
       }).catch(() => {});
     } else {
       setAvailableCategories([]);
@@ -157,7 +157,9 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
       }
     } else if (catName.includes('student')) {
       monthlyFee = currentSettings?.contributionRules?.fixedFees?.student ?? 1;
-    } else if (catName.includes('resident') || catName.includes('farmer')) {
+    } else if (catName.includes('resident')) {
+      monthlyFee = currentSettings?.contributionRules?.fixedFees?.resident ?? 5;
+    } else if (catName.includes('farmer')) {
       monthlyFee = currentSettings?.contributionRules?.fixedFees?.farmer ?? 5;
     } else {
       if (gross <= 0) return { tax: 0, pension: 0, netSalary: 0, percentage: 0, monthlyFee: 0 };
