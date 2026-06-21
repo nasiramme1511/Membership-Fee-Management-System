@@ -104,18 +104,14 @@ exports.createMember = async (req, res) => {
     const paymentDay  = memberData.paymentDay || 1;
     const paymentSchedule = generatePaymentSchedule(currentYear, paymentDay);
 
-    const existing = await Member.findOne({ 
-      where: { 
-        [Op.or]: [
-          { fullName: memberData.fullName },
-          ...(memberData.phone ? [{ phone: memberData.phone }] : [])
-        ]
-      } 
-    });
+    let existing = null;
+    if (memberData.phone) {
+      existing = await Member.findOne({ 
+        where: { phone: memberData.phone } 
+      });
+    }
     if (existing) {
-      const matchedBy = existing.fullName === memberData.fullName
-        ? `the name "${memberData.fullName}"`
-        : `the phone number "${memberData.phone}"`;
+      const matchedBy = `the phone number "${memberData.phone}"`;
       return res.status(409).json({
         success: false,
         message: `Duplicate record detected. A member with ${matchedBy} is already registered in the system (ID: ${existing.memberId || existing.id}). Please verify the information and try again.`
@@ -463,31 +459,18 @@ exports.bulkAppendMembers = async (req, res) => {
     let settings = await Setting.findOne();
     if (!settings) settings = await Setting.create({});
 
-    // Bulk check for existing names and phones to avoid duplicates
-    const inputNames = members.map(m => m.fullName).filter(Boolean);
+    // Bulk check for existing phones to avoid duplicates
     const inputPhones = members.map(m => m.phone).filter(Boolean);
-    const existingMembers = await Member.findAll({
-      where: {
-        [Op.or]: [
-          ...(inputNames.length ? [{ fullName: { [Op.in]: inputNames } }] : []),
-          ...(inputPhones.length ? [{ phone: { [Op.in]: inputPhones } }] : [])
-        ]
-      },
-      attributes: ['fullName', 'phone']
-    });
-    const existingNamesSet = new Set(existingMembers.map(m => m.fullName));
+    const existingMembers = inputPhones.length > 0 ? await Member.findAll({
+      where: { phone: { [Op.in]: inputPhones } },
+      attributes: ['phone']
+    }) : [];
     const existingPhonesSet = new Set(existingMembers.map(m => m.phone));
 
     for (let i = 0; i < members.length; i++) {
       try {
         const memberData = members[i];
         
-        // Skip if name already exists in DB
-        if (existingNamesSet.has(memberData.fullName)) {
-          skipped.push({ name: memberData.fullName, reason: 'Name already exists' });
-          continue;
-        }
-
         // Skip if phone already exists in DB
         if (memberData.phone && existingPhonesSet.has(memberData.phone)) {
           skipped.push({ name: memberData.fullName, reason: 'Phone number already exists' });
@@ -495,10 +478,6 @@ exports.bulkAppendMembers = async (req, res) => {
         }
 
         // Local duplicate check (within the same request)
-        if (createdMembers.some(m => m.fullName === memberData.fullName)) {
-          skipped.push({ name: memberData.fullName, reason: 'Duplicate in input list' });
-          continue;
-        }
 
         if (createdMembers.some(m => m.phone && memberData.phone && m.phone === memberData.phone)) {
           skipped.push({ name: memberData.fullName, reason: 'Duplicate phone in input list' });
