@@ -27,6 +27,7 @@ interface RowData {
 
 export default function FastEntryModal({ onClose, onSuccess, sectorTypes, categories, userRole, userSectorUnitId }: FastEntryModalProps) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

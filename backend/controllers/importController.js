@@ -206,15 +206,11 @@ exports.importMembers = async (req, res) => {
     // ── Bulk duplicate check (ONE query instead of N) ─────────────────────
     const existingMembers = await Member.findAll({
       where: {
-        [Op.or]: [
-          { phone: { [Op.in]: allPhones } },
-          { fullName: { [Op.in]: allNames } }
-        ]
+        phone: { [Op.in]: allPhones }
       },
-      attributes: ['phone', 'fullName']
+      attributes: ['phone']
     });
     const existingPhones = new Set(existingMembers.map(m => m.phone));
-    const existingLowerNames = new Set(existingMembers.map(m => m.fullName.toLowerCase()));
 
     // ── Second pass: in-memory processing, no DB calls per row ────────────
     const membersToCreate = [];
@@ -223,10 +219,6 @@ exports.importMembers = async (req, res) => {
       try {
         if (existingPhones.has(memberData.phone)) {
           results.duplicates.push({ row: rowNum, name: memberData.fullName, error: `Duplicate Found: Phone '${memberData.phone}' is already registered.` });
-          continue;
-        }
-        if (existingLowerNames.has(memberData.fullName.toLowerCase())) {
-          results.duplicates.push({ row: rowNum, name: memberData.fullName, error: `Duplicate Found: Name '${memberData.fullName}' is already registered.` });
           continue;
         }
 
