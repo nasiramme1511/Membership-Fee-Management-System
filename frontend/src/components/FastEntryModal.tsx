@@ -282,23 +282,33 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
   const handleKeyDown = (e: React.KeyboardEvent, index: number, field: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (index === rows.length - 1 && field === 'grossSalary' && rows[index].grossSalary) {
-        setRows([...rows, createEmptyRow()]);
-        setTimeout(() => {
-          const inputs = tableRef.current?.querySelectorAll(`input[name="fullName-${index + 1}"]`);
-          if (inputs && inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
-        }, 50);
-      } else {
-        if (field === 'fullName') {
-          const inputs = tableRef.current?.querySelectorAll(`select[name="gender-${index}"]`);
-          if (inputs && inputs.length > 0) (inputs[0] as HTMLSelectElement).focus();
-        } else if (field === 'gender') {
-          const inputs = tableRef.current?.querySelectorAll(`input[name="grossSalary-${index}"]`);
-          if (inputs && inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
-        } else if (field === 'grossSalary') {
+      const hasSalaryField = mType === 'Salary-Based' || isEmployeeWing || mType === 'Investor' || mType === 'Business';
+      
+      if (index === rows.length - 1) {
+        if ((field === 'grossSalary' && rows[index].grossSalary) || (!hasSalaryField && field === 'gender')) {
+          setRows([...rows, createEmptyRow()]);
+          setTimeout(() => {
+            const inputs = tableRef.current?.querySelectorAll(`input[name="fullName-${index + 1}"]`);
+            if (inputs && inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
+          }, 50);
+          return;
+        }
+      }
+
+      if (field === 'fullName') {
+        const inputs = tableRef.current?.querySelectorAll(`select[name="gender-${index}"]`);
+        if (inputs && inputs.length > 0) (inputs[0] as HTMLSelectElement).focus();
+      } else if (field === 'gender') {
+        if (hasSalaryField) {
+          const inputs = tableRef.current?.querySelectorAll(`[name="grossSalary-${index}"]`);
+          if (inputs && inputs.length > 0) (inputs[0] as HTMLElement).focus();
+        } else {
           const inputs = tableRef.current?.querySelectorAll(`input[name="fullName-${index + 1}"]`);
           if (inputs && inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
         }
+      } else if (field === 'grossSalary') {
+        const inputs = tableRef.current?.querySelectorAll(`input[name="fullName-${index + 1}"]`);
+        if (inputs && inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
       }
     }
   };
@@ -333,7 +343,7 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
       toast.warning('Incomplete Selection', 'Please select a Sector Unit and Category before saving members.');
       return;
     }
-    const isSalaryRequired = mType === 'Salary-Based' || mType === 'Investor';
+    const isSalaryRequired = mType === 'Salary-Based' || mType === 'Investor' || isEmployeeWing;
     const validRows = rows.filter(r => {
       const nameOk = r.fullName.trim() !== '';
       const salaryOk = isSalaryRequired ? parseNumeric(r.grossSalary) > 0 : (mType === 'Business' ? !!r.grossSalary : true);
@@ -388,11 +398,20 @@ export default function FastEntryModal({ onClose, onSuccess, sectorTypes, catego
         toast.update(toastId, 'warning', 'All Entries Skipped',
           `${skipped} member${skipped > 1 ? 's were' : ' was'} identified as duplicates and were not saved.`
         );
+      } else if (hasErrors) {
+        toast.update(toastId, 'error', 'Batch Entry Failed', `${res.data.errors.length} row(s) encountered errors. First error: ${res.data.errors[0].error}`);
       }
-      if (res.data.skipped && res.data.skipped.length > 0) {
+
+      if (created > 0 && !hasErrors) {
+        onSuccess();
+      } else if (res.data.skipped && res.data.skipped.length > 0) {
         const skippedNames = res.data.skipped.map((s: any) => s.name).join(', ');
         setError(`Saved ${created} members. ${skipped} skipped (duplicates): ${skippedNames}`);
-        setTimeout(() => onSuccess(), 2000);
+        if (created > 0) {
+          setTimeout(() => onSuccess(), 3000);
+        }
+      } else if (hasErrors) {
+        setError(`Failed to save members. ${res.data.errors[0].name}: ${res.data.errors[0].error}`);
       } else {
         onSuccess();
       }
