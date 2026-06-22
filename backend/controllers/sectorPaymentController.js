@@ -404,8 +404,8 @@ exports.updateSectorPayment = async (req, res) => {
       }
     }
 
-    if (isClosed && req.user.role !== 'super_admin') {
-      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin can edit deposits in closed periods. Please reopen the period first.' });
+    if (isClosed && !['super_admin', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin or System Admin can edit deposits in closed periods. Please reopen the period first.' });
     }
 
     const wasApproved = payment.approvalStatus === 'APPROVED';
@@ -568,8 +568,8 @@ exports.reopenPayment = async (req, res) => {
 
     const isClosed = await isPeriodClosed(payment.sectorUnitId, payment.billingMonth, payment.billingYear);
 
-    if (isClosed && req.user.role !== 'super_admin') {
-      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin can reopen payments for closed periods.' });
+    if (isClosed && !['super_admin', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin or System Admin can reopen payments for closed periods.' });
     }
 
     const oldStatus = payment.approvalStatus;
@@ -697,8 +697,8 @@ exports.openPeriod = async (req, res) => {
     }
 
     const isClosed = await isPeriodClosed(sectorUnitId, billingMonth, billingYear);
-    if (isClosed && req.user.role !== 'super_admin') {
-      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin can reopen closed periods.' });
+    if (isClosed && !['super_admin', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'This period is financially closed. Only Super Admin or System Admin can reopen closed periods.' });
     }
 
     await sequelize.query(`

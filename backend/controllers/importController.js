@@ -7,6 +7,7 @@ const MemberCategory = require('../models/MemberCategory');
 const Setting = require('../models/Setting');
 const ClassificationEngine = require('../utils/classificationEngine');
 const { getEthiopianYear } = require('../utils/ethiopianCalendar');
+const { checkDuplicate } = require('../utils/duplicateDetector');
 
 // Helper: flatten nested member data (same logic as memberController)
 function flattenMemberData(data) {
@@ -174,9 +175,11 @@ exports.importMembers = async (req, res) => {
     let settings = await Setting.findOne();
     if (!settings) settings = await Setting.create({});
 
-    // ── First pass: parse all rows and collect phones/names ───────────────
+    // ── First pass: parse all rows and collect fields for duplicate check ──
     const parsedRows = [];
     const allPhones = [];
+    const allNationalIds = [];
+    const allEmails = [];
     const allNames = [];
 
     for (let i = 0; i < data.length; i++) {
@@ -196,6 +199,8 @@ exports.importMembers = async (req, res) => {
         }
 
         allPhones.push(memberData.phone);
+        if (memberData.nationalId) allNationalIds.push(memberData.nationalId);
+        if (memberData.email) allEmails.push(memberData.email);
         allNames.push(memberData.fullName.toLowerCase());
         parsedRows.push({ row, rowNum, memberData, index: i });
       } catch (error) {
@@ -203,22 +208,39 @@ exports.importMembers = async (req, res) => {
       }
     }
 
-    // ── Bulk duplicate check (ONE query instead of N) ─────────────────────
-    const existingMembers = await Member.findAll({
-      where: {
-        phone: { [Op.in]: allPhones }
-      },
-      attributes: ['phone']
-    });
-    const existingPhones = new Set(existingMembers.map(m => m.phone));
+    // ── Bulk duplicate check across phone, nationalId, email ───────────────
+    const bulkWhere = [];
+    if (allPhones.length) bulkWhere.push({ phone: { [Op.in]: allPhones } });
+    if (allNationalIds.length) bulkWhere.push({ nationalId: { [Op.in]: allNationalIds } });
+    if (allEmails.length) bulkWhere.push({ email: { [Op.in]: allEmails } });
+
+    const existingMembers = bulkWhere.length ? await Member.findAll({
+      where: { [Op.or]: bulkWhere },
+      attributes: ['id', 'phone', 'nationalId', 'email', 'memberId', 'fullName']
+    }) : [];
+
+    function isDuplicate(memberData, existing) {
+      if (memberData.phone && existing.phone && String(existing.phone) === String(memberData.phone)) return 'Phone';
+      if (memberData.nationalId && existing.nationalId && String(existing.nationalId) === String(memberData.nationalId)) return 'National ID';
+      if (memberData.email && existing.email && String(existing.email).toLowerCase() === String(memberData.email).toLowerCase()) return 'Email';
+      return null;
+    }
 
     // ── Second pass: in-memory processing, no DB calls per row ────────────
     const membersToCreate = [];
 
     for (const { row, rowNum, memberData, index: i } of parsedRows) {
       try {
-        if (existingPhones.has(memberData.phone)) {
-          results.duplicates.push({ row: rowNum, name: memberData.fullName, error: `Duplicate Found: Phone '${memberData.phone}' is already registered.` });
+        let dupInfo = null;
+        for (const ex of existingMembers) {
+          const matchedField = isDuplicate(memberData, ex);
+          if (matchedField) {
+            dupInfo = { field: matchedField, value: memberData[matchedField === 'Phone' ? 'phone' : matchedField === 'National ID' ? 'nationalId' : 'email'], existing: ex };
+            break;
+          }
+        }
+        if (dupInfo) {
+          results.duplicates.push({ row: rowNum, name: memberData.fullName, error: `Duplicate Found: ${dupInfo.field} '${dupInfo.value}' is already registered by "${dupInfo.existing.fullName}" (${dupInfo.existing.memberId}).` });
           continue;
         }
 
