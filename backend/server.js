@@ -93,46 +93,7 @@ SectorPaymentAuditLog.belongsTo(User, { foreignKey: 'userId', as: 'user', onDele
 
 // (connection now happens in start() below to avoid race conditions)
 
-// ── Auto-Seed Admin Users (Free tier: no shell/SSH) ─────────────────────────
-// Only runs on production first deploy when DB_SYNC=true.
-// Remove this block after first successful login.
-const seedInitialUsers = async () => {
-  try {
-    const { sequelize } = require('./config/db');
-    const User = require('./models/User');
-
-    const usersToCreate = [
-      { username: 'admin',     email: 'admin@mcms.ddu',            password: 'admin123',       fullName: 'System Administrator',          role: 'admin' },
-      { username: 'operator',  email: 'operator@mcms.ddu',         password: 'operator123',    fullName: 'System Operator',               role: 'sector_officer' },
-      { username: 'admin-pp',  email: 'admin@pp-diredawa.org',     password: 'admin123',       fullName: 'PP Dire Dawa Administrator',    role: 'admin' },
-      { username: 'superadmin',email: 'superadmin@pp-diredawa.org',password: 'superadmin123', fullName: 'Super Administrator',            role: 'super_admin' },
-      { username: 'seyfedin',  email: 'seyfedin@pp-diredawa.org', password: 'seyfedin@2026', fullName: 'Seyfedin',                      role: 'admin' }
-    ];
-
-    for (const u of usersToCreate) {
-      try {
-        const exists = await User.findOne({ where: { email: u.email } });
-        if (exists) {
-          if (DEBUG_DB) console.log(`⏭️  Skipped ${u.email} (already exists)`);
-          continue;
-        }
-        const existsByUsername = await User.findOne({ where: { username: u.username } });
-        if (existsByUsername) {
-          if (DEBUG_DB) console.log(`⚠️  Deleting stale user with username '${u.username}'...`);
-          await existsByUsername.destroy();
-        }
-        await User.create(u);
-        if (DEBUG_DB) console.log(`✅ Auto-created: ${u.email} / ${u.password}`);
-      } catch (e) {
-        console.error(`⚠️  Failed to create ${u.email}: ${e.message}`);
-      }
-    }
-  } catch (err) {
-    console.error('⚠️ Auto-seed error:', err.message);
-  }
-};
-
-// Moved into start() below
+// ── Auto-Seed: Removed per request — users are managed manually ─────────────
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 // IMPORTANT: All API routes MUST be defined BEFORE the SPA fallback below
@@ -311,11 +272,6 @@ const start = async () => {
     await require('./migrations/alter_user_otp')();
   } catch (e) {
     console.error('⚠️ User OTP migration error:', e.message);
-  }
-
-  // Always seed essential users in production (safe — skips existing users)
-  if (isProduction) {
-    setTimeout(seedInitialUsers, 3000);
   }
 
   app.listen(PORT, () => {

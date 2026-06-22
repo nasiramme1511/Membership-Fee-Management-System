@@ -12,6 +12,7 @@ const Setting = require('../models/Setting');
 const ClassificationEngine = require('../utils/classificationEngine');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 const { aiActionAuditLog } = require('./aiActionLogger');
+const { checkDuplicate } = require('../utils/duplicateDetector');
 
 const ACTION_PERMISSIONS = {
   ADD_MEMBER: ['admin', 'super_admin', 'sector_officer'],
@@ -363,16 +364,9 @@ Do NOT include any text outside the JSON object.`
     const currentYear = getEthiopianYear();
     const paymentSchedule = this._generatePaymentSchedule(currentYear);
 
-    const existing = await Member.findOne({
-      where: {
-        [Op.or]: [
-          { fullName: memberData.fullName },
-          ...(memberData.phone ? [{ phone: memberData.phone }] : [])
-        ]
-      }
-    });
-    if (existing) {
-      throw new Error(`A member with name '${memberData.fullName}' already exists.`);
+    const dup = await checkDuplicate(memberData);
+    if (dup) {
+      throw new Error(`Duplicate record: ${dup.matchedFields.join(' and ')} is already registered to "${dup.existing.fullName}" (${dup.existing.memberId}).`);
     }
 
     const flat = this._flattenMemberData({

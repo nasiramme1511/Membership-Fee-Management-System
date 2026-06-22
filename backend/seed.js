@@ -512,7 +512,7 @@ async function seed() {
     await Setting.destroy({ where: {} });
     console.log('Cleared existing data');
 
-    // Create admin user
+    // Create admin user (skip if user seeding is disabled)
     const adminUser = await User.create({
       username: 'admin',
       email: 'admin@mcms.ddu',
@@ -522,7 +522,7 @@ async function seed() {
     });
     console.log('✅ Created admin user: admin@mcms.ddu / admin123');
 
-    // Create operator user
+    // Create operator user (skip if user seeding is disabled)
     const operatorUser = await User.create({
       username: 'operator',
       email: 'operator@mcms.ddu',

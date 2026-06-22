@@ -9,8 +9,7 @@ const Member = sequelize.define('Member', {
 
   memberId: {
     type: DataTypes.STRING(50),
-    unique: true,
-    defaultValue: () => `DD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+    unique: true
   },
 
   // ── Personal ────────────────────────────────────────────────────────────────
@@ -110,9 +109,23 @@ const Member = sequelize.define('Member', {
   timestamps: true,
   indexes: [
     { fields: ['memberId'] },
+    { fields: ['phone'] },
     { fields: ['branch', 'membershipType'] },
     { fields: ['status', 'paymentStatus'] }
   ]
+});
+
+// ── beforeCreate: auto-generate memberId with duplicate check ──────────────
+Member.beforeCreate(async (member) => {
+  if (!member.memberId) {
+    const { generateMemberId } = require('../utils/memberIdGenerator');
+    member.memberId = await generateMemberId();
+  } else {
+    const existing = await Member.findOne({ where: { memberId: member.memberId }, attributes: ['id'] });
+    if (existing) {
+      throw new Error(`Member ID "${member.memberId}" is already taken.`);
+    }
+  }
 });
 
 // ── toJSON: reconstruct nested objects expected by frontend / classificationEngine

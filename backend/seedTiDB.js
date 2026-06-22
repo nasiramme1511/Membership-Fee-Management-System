@@ -321,11 +321,9 @@ async function seedGallery() {
 
 async function seedUsers() {
   console.log('\n--- Users ---');
+
+  // Super Admin role transferred to System Admin — only minimal users are seeded.
   const usersToCreate = [
-    { username: 'admin',     email: 'admin@mcms.ddu',            password: 'admin123',       fullName: 'System Administrator',          role: 'admin' },
-    { username: 'operator',  email: 'operator@mcms.ddu',         password: 'operator123',    fullName: 'System Operator',               role: 'sector_officer' },
-    { username: 'admin-pp',  email: 'admin@pp-diredawa.org',     password: 'admin123',       fullName: 'PP Dire Dawa Administrator',    role: 'admin' },
-    { username: 'superadmin',email: 'superadmin@pp-diredawa.org',password: 'superadmin123', fullName: 'Super Administrator',            role: 'super_admin' },
     { username: 'seyfedin',  email: 'seyfedin@pp-diredawa.org', password: 'seyfedin@2026', fullName: 'Seyfedin',                      role: 'admin' },
   ];
 
@@ -337,6 +335,19 @@ async function seedUsers() {
       count++;
     }
   }
+
+  // Reassign any user still having super_admin role to admin
+  try {
+    const [updated] = await sequelize.query(
+      `UPDATE users SET role = 'admin' WHERE role = 'super_admin'`
+    );
+    if (updated?.affectedRows > 0) {
+      console.log(`✅ ${updated.affectedRows} super_admin user(s) reassigned to admin role`);
+    }
+  } catch (e) {
+    console.log('ℹ️  super_admin reassignment:', e.message);
+  }
+
   console.log(`✅ ${count} users seeded (${usersToCreate.length - count} already existed)`);
 }
 
@@ -367,11 +378,8 @@ async function main() {
 
     console.log('\n🎉 TiDB Cloud seeding completed successfully!');
     console.log('\n🔐 Login Credentials:');
-    console.log('   Admin:            admin@mcms.ddu / admin123');
-    console.log('   Operator:         operator@mcms.ddu / operator123');
-    console.log('   PP Admin:         admin@pp-diredawa.org / admin123');
-    console.log('   Super Admin:      superadmin@pp-diredawa.org / superadmin123');
     console.log('   Seyfedin:         seyfedin@pp-diredawa.org / seyfedin@2026');
+    console.log('   (Super Admin role has been reassigned to System Admin — no separate superadmin account)');
     process.exit(0);
   } catch (err) {
     console.error('❌ Seeding failed:', err);

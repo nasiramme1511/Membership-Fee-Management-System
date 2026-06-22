@@ -214,65 +214,7 @@ async function seed() {
     console.log(`✅ ${RURAL_CLUSTERS.length} rural cluster units created`);
 
     // ─── Users ──────────────────────────────────────────────────────────────────
-    await User.destroy({ where: {} });
-
-    const adminUser = await User.create({
-      username: 'admin',
-      email: 'admin@mcms.gov.et',
-      password: 'Password123!',
-      fullName: 'System Administrator',
-      role: 'admin'
-    });
-    console.log('✅ Created Admin: admin@mcms.gov.et / Password123!');
-
-    await User.create({
-      username: 'analyst',
-      email: 'analyst@mcms.gov.et',
-      password: 'Password123!',
-      fullName: 'Expert Analyst',
-      role: 'expert'
-    });
-    console.log('✅ Created Expert: analyst@mcms.gov.et / Password123!');
-
-    // Sector officer examples
-    const mayorOffice = instUnitMap['Mayor Office'];
-    if (mayorOffice) {
-      await User.create({
-        username: 'mayor_officer',
-        email: 'mayor@mcms.gov.et',
-        password: 'Password123!',
-        fullName: 'Mayor Office Officer',
-        role: 'sector_officer',
-        sectorUnitId: mayorOffice.id
-      });
-      console.log('✅ Created: mayor@mcms.gov.et (Mayor Office)');
-    }
-
-    const woreda1 = await SectorUnit.findOne({ where: { name: 'Woreda 1' } });
-    if (woreda1) {
-      await User.create({
-        username: 'woreda1_officer',
-        email: 'woreda1@mcms.gov.et',
-        password: 'Password123!',
-        fullName: 'Woreda 1 Officer',
-        role: 'sector_officer',
-        sectorUnitId: woreda1.id
-      });
-      console.log('✅ Created: woreda1@mcms.gov.et (Woreda 1)');
-    }
-
-    const wahelCluster = await SectorUnit.findOne({ where: { name: 'Wahel Cluster' } });
-    if (wahelCluster) {
-      await User.create({
-        username: 'wahel_officer',
-        email: 'wahel@mcms.gov.et',
-        password: 'Password123!',
-        fullName: 'Wahel Cluster Officer',
-        role: 'sector_officer',
-        sectorUnitId: wahelCluster.id
-      });
-      console.log('✅ Created: wahel@mcms.gov.et (Wahel Cluster)');
-    }
+    // NOTE: User seeding disabled per request — users are managed manually.
 
     console.log('\n🎉 Organizational structure seeded successfully!');
     console.log('Login: admin@mcms.gov.et / Password123!');

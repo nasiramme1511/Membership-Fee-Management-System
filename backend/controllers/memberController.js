@@ -9,6 +9,7 @@ const Setting = require('../models/Setting');
 const ClassificationEngine = require('../utils/classificationEngine');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 const { createAuditLog } = require('../utils/auditLogger');
+const { checkDuplicate } = require('../utils/duplicateDetector');
 
 // ─── Tax-exempt sector units (e.g., Prosperity Party) ───────────────────────────
 const TAX_EXEMPT_UNIT_NAMES = ['Prosperity Party Dire Dawa Branch Office'];
@@ -104,17 +105,11 @@ exports.createMember = async (req, res) => {
     const paymentDay  = memberData.paymentDay || 1;
     const paymentSchedule = generatePaymentSchedule(currentYear, paymentDay);
 
-    let existing = null;
-    if (memberData.phone) {
-      existing = await Member.findOne({ 
-        where: { phone: memberData.phone } 
-      });
-    }
-    if (existing) {
-      const matchedBy = `the phone number "${memberData.phone}"`;
+    const dup = await checkDuplicate(memberData);
+    if (dup) {
       return res.status(409).json({
         success: false,
-        message: `Duplicate record detected. A member with ${matchedBy} is already registered in the system (ID: ${existing.memberId || existing.id}). Please verify the information and try again.`
+        message: `Duplicate record detected. A member with ${dup.matchedFields.join(' and ')} is already registered as "${dup.existing.fullName}" (ID: ${dup.existing.memberId || dup.existing.id}). Please verify the information and try again.`
       });
     }
 
@@ -308,6 +303,15 @@ exports.updateMember = async (req, res) => {
 
     let updateData = { ...req.body };
 
+    // Prevent updating to duplicate phone, nationalId, or email
+    const dup = await checkDuplicate(req.body, member.id);
+    if (dup) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot update: ${dup.matchedFields.join(' and ')} is already registered to another member "${dup.existing.fullName}" (ID: ${dup.existing.memberId || dup.existing.id}).`
+      });
+    }
+
     if (req.body.financial || req.body.membershipType || req.body.sector) {
       let settings = await Setting.findOne();
       if (!settings) settings = await Setting.create({});
@@ -459,28 +463,57 @@ exports.bulkAppendMembers = async (req, res) => {
     let settings = await Setting.findOne();
     if (!settings) settings = await Setting.create({});
 
-    // Bulk check for existing phones to avoid duplicates
+    // Bulk check for existing duplicates across phone, nationalId, email
     const inputPhones = members.map(m => m.phone).filter(Boolean);
-    const existingMembers = inputPhones.length > 0 ? await Member.findAll({
-      where: { phone: { [Op.in]: inputPhones } },
-      attributes: ['phone']
+    const inputNationalIds = members.map(m => m.nationalId).filter(Boolean);
+    const inputEmails = members.map(m => m.email).filter(Boolean);
+
+    const bulkWhere = [];
+    if (inputPhones.length) bulkWhere.push({ phone: { [Op.in]: inputPhones } });
+    if (inputNationalIds.length) bulkWhere.push({ nationalId: { [Op.in]: inputNationalIds } });
+    if (inputEmails.length) bulkWhere.push({ email: { [Op.in]: inputEmails } });
+
+    const existingMembers = bulkWhere.length ? await Member.findAll({
+      where: { [Op.or]: bulkWhere },
+      attributes: ['id', 'phone', 'nationalId', 'email', 'memberId', 'fullName']
     }) : [];
-    const existingPhonesSet = new Set(existingMembers.map(m => m.phone));
+
+    function findExistingDups(inputMember) {
+      return existingMembers.filter(ex => {
+        if (inputMember.phone && ex.phone && String(ex.phone) === String(inputMember.phone)) return true;
+        if (inputMember.nationalId && ex.nationalId && String(ex.nationalId) === String(inputMember.nationalId)) return true;
+        if (inputMember.email && ex.email && String(ex.email).toLowerCase() === String(inputMember.email).toLowerCase()) return true;
+        return false;
+      });
+    }
 
     for (let i = 0; i < members.length; i++) {
       try {
         const memberData = members[i];
-        
-        // Skip if phone already exists in DB
-        if (memberData.phone && existingPhonesSet.has(memberData.phone)) {
-          skipped.push({ name: memberData.fullName, reason: 'Phone number already exists' });
+
+        // Skip if duplicate found in DB (phone, nationalId, or email)
+        const matchedExisting = findExistingDups(memberData);
+        if (matchedExisting.length) {
+          const reasons = matchedExisting.map(ex => {
+            const parts = [];
+            if (ex.phone && memberData.phone && String(ex.phone) === String(memberData.phone)) parts.push(`Phone "${ex.phone}"`);
+            if (ex.nationalId && memberData.nationalId && String(ex.nationalId) === String(memberData.nationalId)) parts.push(`National ID "${ex.nationalId}"`);
+            if (ex.email && memberData.email && String(ex.email).toLowerCase() === String(memberData.email).toLowerCase()) parts.push(`Email "${ex.email}"`);
+            return `${parts.join(' and ')} belongs to "${ex.fullName}" (${ex.memberId})`;
+          });
+          skipped.push({ name: memberData.fullName, reason: reasons.join('; ') });
           continue;
         }
 
         // Local duplicate check (within the same request)
-
-        if (createdMembers.some(m => m.phone && memberData.phone && m.phone === memberData.phone)) {
-          skipped.push({ name: memberData.fullName, reason: 'Duplicate phone in input list' });
+        const localDup = createdMembers.find(cm => {
+          if (memberData.phone && cm.phone && String(cm.phone) === String(memberData.phone)) return true;
+          if (memberData.nationalId && cm.nationalId && String(cm.nationalId) === String(memberData.nationalId)) return true;
+          if (memberData.email && cm.email && String(cm.email).toLowerCase() === String(memberData.email).toLowerCase()) return true;
+          return false;
+        });
+        if (localDup) {
+          skipped.push({ name: memberData.fullName, reason: 'Duplicate (phone, national ID, or email) in input list' });
           continue;
         }
 
