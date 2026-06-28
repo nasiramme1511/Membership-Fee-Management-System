@@ -1,61 +1,108 @@
-const { parseReceipt } = require('../receiptParser');
+const verifyet = require('../verifyetService');
+const VerifyEtPayment = require('../../models/VerifyEtPayment');
 
-const CBE_RECEIPT_BASE = 'https://mbreciept.cbe.com.et';
-
-exports.verify = async (transactionId, amount, receiverAccount, receiptUrl) => {
+exports.verify = async (transactionId, amount, receiverAccount, receiverName, receiptUrl) => {
   try {
-    const url = receiptUrl || `${CBE_RECEIPT_BASE}/${transactionId}`;
+    const accountSuffix = receiverAccount?.slice(-8) || '';
+    const response = await verifyet.verifyTransaction('cbe', transactionId, accountSuffix);
 
-    const parsed = await parseReceipt(url, 'cbe');
-
-    if (parsed.isError) {
-      return { verified: false, error: 'The CBE receipt page returned an error. Please check your transaction ID and ensure you are accessing from within Ethiopia.' };
+    if (response.statusCode >= 500) {
+      return { verified: false, serverError: true, error: 'CBE verification server is temporarily unavailable. Please try again later or upload a receipt file instead.' };
     }
 
-    if (parsed.error) {
-      return { verified: false, error: parsed.error };
+    const body = response.data;
+
+    if (!body || !body.success) {
+      return { verified: false, error: body?.message || 'Verification failed. Please check your transaction ID.' };
     }
 
-    if (!parsed.transactionId) {
-      return { verified: false, error: `No valid transaction found at the CBE receipt URL. Please verify your transaction ID "${transactionId}" is correct.` };
+    const verification = body.verification || {};
+    const txData = Array.isArray(body.data) && body.data.length > 0 ? body.data[0] : {};
+
+    if (verification.processingStatus === 'queued' || verification.processingStatus === 'running') {
+      return { verified: false, serverError: true, error: 'CBE verification is taking longer than expected. The payment has been saved for manual review.' };
     }
 
-    if (!parsed.amount) {
-      return { verified: false, error: `Could not extract payment amount from the CBE receipt for transaction "${transactionId}".` };
+    try {
+      await VerifyEtPayment.create({
+        paymentMethod: 'cbe',
+        referenceNumber: transactionId,
+        accountSuffix,
+        amount: txData.amount || amount,
+        senderName: txData.senderName || null,
+        receiverName: txData.receiverName || receiverName || receiverAccount,
+        verificationStatus: verification.verified ? 'VERIFIED' : 'FAILED',
+        requestId: body.requestId || null,
+      });
+    } catch (dbErr) {
+      console.error('VerifyEtPayment log error:', dbErr.message);
     }
 
-    const tidMatch = String(parsed.transactionId).trim();
-    const submittedTid = String(transactionId).trim();
-    const tidNormalized = tidMatch.replace(/[^A-Z0-9]/gi, '');
-    const submittedNormalized = submittedTid.replace(/[^A-Z0-9]/gi, '');
-    if (tidNormalized !== submittedNormalized && !tidNormalized.startsWith(submittedNormalized) && !submittedNormalized.startsWith(tidNormalized)) {
+    if (!verification.verified) {
+      return { verified: false, error: verification.errorMessage || body.message || 'Transaction could not be verified. Please check your transaction ID.' };
+    }
+
+    const verifiedAmount = parseFloat(txData.amount);
+    if (verifiedAmount && verifiedAmount !== Number(amount)) {
       return {
         verified: false,
-        error: `Transaction ID mismatch: you entered "${submittedTid}" but the CBE receipt shows transaction "${tidMatch}". The transaction ID must match exactly.`
+        error: `Amount mismatch: you entered ETB ${amount} but the bank transaction is for ETB ${verifiedAmount}.`,
+        extractedAmount: verifiedAmount,
+        transactionId,
       };
     }
 
-    if (parsed.amount !== amount) {
-      return {
-        verified: false,
-        error: `Amount mismatch: expected ETB ${amount}, but CBE receipt shows ETB ${parsed.amount}. The payment amount must match exactly.`,
-        extractedAmount: parsed.amount,
-        transactionId: parsed.transactionId
-      };
+    if (txData.receiverName && receiverName && txData.receiverName.toLowerCase() !== receiverName.toLowerCase()) {
+      return { verified: false, error: `Receiver name mismatch: the transaction was sent to "${txData.receiverName}" but our account holder name is "${receiverName}".` };
+    }
+
+    const txAccount = txData.receiverAccount || txData.receiverPhone || txData.receiverPhoneNumber;
+    if (txAccount && receiverAccount) {
+      const raw = String(txAccount);
+      const ourDigits = String(receiverAccount).replace(/\D/g, '');
+      if (raw.includes('*')) {
+        const parts = raw.split('*');
+        const prefix = parts[0].replace(/\D/g, '');
+        const suffix = parts[parts.length - 1].replace(/\D/g, '');
+        const matchSuffix = suffix && ourDigits.slice(-suffix.length) === suffix;
+        const matchPrefix = !prefix || ourDigits.replace(/^0/, '').replace(/^251/, '').startsWith(prefix.replace(/^251/, '').replace(/^0/, ''));
+        if (!matchSuffix || !matchPrefix) {
+          return { verified: false, error: `Receiver account mismatch: the transaction was sent to "${txAccount}" but our account is "${receiverAccount}".` };
+        }
+      } else {
+        const txDigits = raw.replace(/\D/g, '').replace(/^0/, '').replace(/^251/, '');
+        const ourNorm = ourDigits.replace(/^0/, '').replace(/^251/, '');
+        if (txDigits !== ourNorm) {
+          return { verified: false, error: `Receiver account mismatch: the transaction was sent to "${txAccount}" but our account is "${receiverAccount}".` };
+        }
+      }
+    }
+
+    if (txData.timestamp) {
+      const txDate = new Date(txData.timestamp);
+      const today = new Date();
+      const diffHours = Math.abs(today - txDate) / 36e5;
+      if (diffHours > 72) {
+        return { verified: false, error: `Transaction date mismatch: the bank shows this transaction occurred on ${txDate.toISOString().split('T')[0]} which is more than 3 days ago. Please verify the transaction ID is correct and recent.` };
+      }
     }
 
     return {
       verified: true,
       provider: 'cbe',
-      transactionId: parsed.transactionId,
-      payer: parsed.payer || 'Unknown',
-      receiver: parsed.receiver || receiverAccount,
-      amount: parsed.amount,
+      transactionId,
+      payer: txData.senderName || 'Unknown',
+      receiver: txData.receiverName || receiverName || receiverAccount,
+      amount: verifiedAmount || Number(amount),
       status: 'SUCCESS',
-      date: parsed.date || new Date().toISOString(),
-      receiptUrl: url
+      date: txData.timestamp || new Date().toISOString(),
+      receiptUrl: '',
     };
   } catch (error) {
-    return { verified: false, error: `CBE verification failed: ${error.message}` };
+    const msg = error.message;
+    if (msg === 'Timeout' || msg.startsWith('Network error') || msg === 'VERIFY_ET_API_KEY is not configured') {
+      return { verified: false, serverError: true, error: `CBE verification unavailable: ${msg}` };
+    }
+    return { verified: false, error: `CBE verification failed: ${msg}` };
   }
 };

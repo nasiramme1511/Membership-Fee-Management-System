@@ -245,16 +245,17 @@ export default function UserManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: t('common.total_users'), value: users.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-          { label: t('common.admin'), value: users.filter(u => u.role === 'admin').length, icon: Shield, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
-          { label: t('common.sector_officer'), value: users.filter(u => u.role === 'sector_officer').length, icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-          { label: t('common.expert'), value: users.filter(u => u.role === 'expert').length, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+          { label: t('common.total_users'), value: users.length, icon: Users, color: 'text-blue-600', iconBg: 'bg-blue-100/80 dark:bg-blue-500/20', border: 'border-blue-200/50 dark:border-blue-700/30', shadow: 'shadow-[0_4px_20px_rgba(59,130,246,0.08)]', accent: 'from-blue-500 to-indigo-500' },
+          { label: t('common.admin'), value: users.filter(u => u.role === 'admin').length, icon: Shield, color: 'text-rose-600', iconBg: 'bg-rose-100/80 dark:bg-rose-500/20', border: 'border-rose-200/50 dark:border-rose-700/30', shadow: 'shadow-[0_4px_20px_rgba(225,29,72,0.08)]', accent: 'from-rose-500 to-pink-500' },
+          { label: t('common.sector_officer'), value: users.filter(u => u.role === 'sector_officer').length, icon: Building2, color: 'text-emerald-600', iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/20', border: 'border-emerald-200/50 dark:border-emerald-700/30', shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.08)]', accent: 'from-emerald-400 to-teal-500' },
+          { label: t('common.expert'), value: users.filter(u => u.role === 'expert').length, icon: Users, color: 'text-purple-600', iconBg: 'bg-purple-100/80 dark:bg-purple-500/20', border: 'border-purple-200/50 dark:border-purple-700/30', shadow: 'shadow-[0_4px_20px_rgba(168,85,247,0.08)]', accent: 'from-purple-500 to-pink-500' },
         ].map(s => (
-          <div key={s.label} className="card flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+          <div key={s.label} className={`relative bg-white dark:bg-slate-900 rounded-xl p-4 border ${s.border} ${s.shadow} transition-shadow duration-300 flex items-center gap-4 overflow-hidden`}>
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${s.accent} rounded-t-xl`} />
+            <div className={`p-3 rounded-xl ${s.iconBg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
             <div>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
             </div>
           </div>
         ))}

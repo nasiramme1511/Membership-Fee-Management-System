@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../lib/api'
-import { Search, Filter, Plus, Upload, Download, Edit2, Trash2, X, Loader2, ChevronLeft, ChevronRight, Users, Wallet, Banknote, ShieldAlert, Receipt } from 'lucide-react'
+import { Search, Filter, Plus, Upload, Download, Edit2, Trash2, X, Loader2, ChevronLeft, ChevronRight, Users, Wallet, Banknote, Receipt, ShieldAlert } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { useTranslation } from 'react-i18next'
@@ -315,7 +315,7 @@ export default function Members() {
     }
   }
 
-  const handleBulkDeleteAll = async () => {
+  const handleBulkDeleteAll = () => {
     setConfirmClearAll(true)
   }
 
@@ -527,25 +527,8 @@ export default function Members() {
       className="space-y-6"
     >
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('common.members')}</h1>
-          {user?.role === 'sector_officer'
-            ? <p className="text-gray-600 dark:text-gray-400">{t('common.showing_members_assigned_sector')}</p>
-            : <p className="text-gray-600 dark:text-gray-400">{t('common.manage_all_registered_members')}</p>
-          }
-        </div>
+        <div></div>
         <div className="flex items-center gap-2">
-          {user?.role === 'admin' && (
-            <button 
-              onClick={handleBulkDeleteAll} 
-              disabled={deletingAll}
-              className="btn bg-slate-200 dark:bg-slate-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2"
-              title={t('common.clear_all')}
-            >
-              {deletingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {t('common.clear_all')}
-            </button>
-          )}
           {user?.role === 'admin' && selectedIds.length > 0 && (
             <button 
               onClick={handleBulkDelete} 
@@ -731,16 +714,19 @@ export default function Members() {
       {/* Metrics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         {[
-          { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-          { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-          { label: t('common.quarterly_revenue'), value: `${Number(summary.totalQuarterlyRevenue).toLocaleString()} ETB`, icon: Receipt, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-          { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
+          { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, iconBg: 'bg-blue-100/80 dark:bg-blue-500/20', iconColor: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200/70 dark:border-blue-700/40', shadow: 'shadow-[0_4px_20px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_30px_rgba(59,130,246,0.22)]', accent: 'from-blue-500 to-indigo-500' },
+          { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/20', iconColor: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200/70 dark:border-emerald-700/40', shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.22)]', accent: 'from-emerald-400 to-teal-500' },
+          { label: t('common.quarterly_revenue'), value: `${Number(summary.totalQuarterlyRevenue).toLocaleString()} ETB`, icon: Receipt, iconBg: 'bg-amber-100/80 dark:bg-amber-500/20', iconColor: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200/70 dark:border-amber-700/40', shadow: 'shadow-[0_4px_20px_rgba(245,158,11,0.12)] hover:shadow-[0_8px_30px_rgba(245,158,11,0.22)]', accent: 'from-amber-400 to-orange-500' },
+          { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, iconBg: 'bg-purple-100/80 dark:bg-purple-500/20', iconColor: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200/70 dark:border-purple-700/40', shadow: 'shadow-[0_4px_20px_rgba(168,85,247,0.12)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.22)]', accent: 'from-purple-500 to-pink-500' },
         ].map(s => (
-          <div key={s.label} className="card flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+          <div key={s.label} className={`relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 ${s.border} ${s.shadow} transition-shadow duration-300 flex items-center gap-3 overflow-hidden`}>
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${s.accent} rounded-t-xl`} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.iconBg}`}>
+              <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className="text-xl font-black text-slate-900 dark:text-white">{s.value}</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{s.label}</p>
             </div>
           </div>
         ))}
@@ -761,22 +747,22 @@ export default function Members() {
           <div className="flex items-center gap-3">
             {user?.role === 'admin' && (
               <button 
-                onClick={handleBulkDelete}
-                disabled={deletingBulk}
-                className="bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
-              >
-                {deletingBulk ? <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {t('common.delete_selected')}
-              </button>
-            )}
-            {user?.role === 'admin' && (
-              <button 
                 onClick={handleBulkDeleteAll}
                 disabled={deletingAll}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-xl shadow-red-900/20"
               >
                 {deletingAll ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
                 {t('common.clear_all')}
+              </button>
+            )}
+            {user?.role === 'admin' && (
+              <button 
+                onClick={handleBulkDelete}
+                disabled={deletingBulk}
+                className="bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2"
+              >
+                {deletingBulk ? <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {t('common.delete_selected')}
               </button>
             )}
             <button 
@@ -792,9 +778,9 @@ export default function Members() {
       {/* Members Table */}
       <div className="table-container">
           <table className="table">
-            <thead className="table-header">
-              <tr>
-                <th className="w-10">
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                <th className="w-10 py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">
                   <input 
                     type="checkbox" 
                     checked={selectedIds.length === members.length && members.length > 0} 
@@ -802,23 +788,22 @@ export default function Members() {
                     className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                 </th>
-                <th>{t('common.full_name')}</th>
-                <th>{t('common.sex')}</th>
-                <th>{selectedSectorType ? t(SECTOR_UNIT_LABELS[selectedSectorType]) : t('common.sector_unit')}</th>
-                <th>{t('common.member_category')}</th>
-                {/* Dynamic financial columns based on dominant member type */}
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.full_name')}</th>
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.sex')}</th>
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Sector<br /><span className="text-[11px]">Unit</span></th>
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Members<br /><span className="text-[11px]">Category</span></th>
                 {members.some(m => m.membershipType === 'Salary-Based') && <>
-                  <th>{t('common.gross_salary_etb')}</th>
-                  <th>{t('common.pension_etb')}</th>
-                  <th>{t('common.income_tax_etb')}</th>
-                  <th>{t('common.net_salary_etb')}</th>
-                  <th>{t('common.contribution_percent')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Gross Salary<br /><span className="text-[11px]">(ETB)</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Pension<br /><span className="text-[11px]">(ETB)</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Income Tax<br /><span className="text-[11px]">(ETB)</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Net Salary<br /><span className="text-[11px]">(ETB)</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Contribution<br /><span className="text-[11px]">%</span></th>
                 </>}
-                {members.some(m => m.membershipType === 'Business') && <th>{t('common.business_type')}</th>}
-                {members.some(m => m.membershipType === 'Investor') && <th>{t('common.capital')}</th>}
-                <th>{t('common.contribution_in_etb')}</th>
-                <th>{t('common.payment_status')}</th>
-                <th>{t('common.action')}</th>
+                {members.some(m => m.membershipType === 'Business') && <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.business_type')}</th>}
+                {members.some(m => m.membershipType === 'Investor') && <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.capital')}</th>}
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Contribution<br /><span className="text-[11px]">In ETB</span></th>
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Payment<br /><span className="text-[11px]">Status</span></th>
+                <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.action')}</th>
               </tr>
             </thead>
             <tbody className="table-body">

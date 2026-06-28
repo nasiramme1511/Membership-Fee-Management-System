@@ -6,7 +6,10 @@ import { useAuth } from '../context/AuthContext'
 import { getCurrentEthiopianPeriod } from '../utils/ethiopianCalendar'
 import api from '../lib/api'
 
-interface SectorDepositMethodModalProps {
+interface BulkPaymentMethodModalProps {
+  members: any[]
+  periodMonth: number
+  periodYear: number
   onClose: () => void
   onSuccess: () => void
 }
@@ -29,11 +32,17 @@ const slideVariants = {
 
 /* ─── Inline Upload Form ─────────────────────────────────────────────────── */
 function UploadForm({
+  members,
+  periodMonth,
+  periodYear,
   selectedBank,
   paymentMethod,
   onClose,
   onSuccess,
 }: {
+  members: any[]
+  periodMonth: number
+  periodYear: number
   selectedBank: BankOption | null
   paymentMethod: PaymentMethod
   onClose: () => void
@@ -41,20 +50,9 @@ function UploadForm({
 }) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const ethPeriod = getCurrentEthiopianPeriod()
 
-  // Sector selectors
-  const [sectorTypes, setSectorTypes] = useState<any[]>([])
-  const [sectors, setSectors]         = useState<any[]>([])
-  const [selectedSectorType, setSelectedSectorType] = useState('')
-  const [selectedSectorId, setSelectedSectorId]     = useState(
-    user?.role === 'sector_officer' ? String(user.sectorUnitId) : ''
-  )
-
-  // Auto-fetched amount
-  const [collectedAmount, setCollectedAmount] = useState<number | null>(null)
-  const [fetchingAmount, setFetchingAmount] = useState(false)
-  const [totalAmount, setTotalAmount] = useState('')
+  // Calculate total amount from members
+  const totalAmount = members.reduce((sum, m) => sum + Number(m.fee), 0).toString()
 
   // File & TID
   const [file,    setFile]    = useState<File | null>(null)
@@ -79,42 +77,7 @@ function UploadForm({
   const [error,           setError]           = useState('')
   const [success,         setSuccess]         = useState(false)
 
-  // Load sector types
-  useEffect(() => {
-    api.get('/sector-types').then(res => setSectorTypes(res.data)).catch(() => {})
-  }, [])
-
-  // Load sector units when type changes
-  useEffect(() => {
-    if (selectedSectorType && user?.role !== 'sector_officer') {
-      api.get(`/sectors?type=${selectedSectorType}`).then(res => setSectors(res.data)).catch(() => {})
-      setSelectedSectorId('')
-    } else {
-      setSectors([])
-    }
-  }, [selectedSectorType])
-
-  // Auto-fetch collected amount when sector selected (billing period automatically set to current Ethiopian month/year)
-  useEffect(() => {
-    const sectorId = selectedSectorId
-    if (!sectorId) {
-      setCollectedAmount(null)
-      setTotalAmount('')
-      return
-    }
-    setFetchingAmount(true)
-    api.get('/sector-payments/validate', {
-      params: { sectorUnitId: sectorId, billingMonth: ethPeriod.month, billingYear: ethPeriod.year, totalAmount: 0 }
-    }).then(res => {
-      const col = Number(res.data.data?.collectedAmount ?? 0)
-      setCollectedAmount(col)
-      if (col > 0) setTotalAmount(String(col))
-    }).catch(() => {
-      setCollectedAmount(null)
-    }).finally(() => {
-      setFetchingAmount(false)
-    })
-  }, [selectedSectorId])
+  // No sector logic needed here
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -146,7 +109,7 @@ function UploadForm({
 
   const canSubmit =
     !loading && !success &&
-    !!selectedSectorId && !!totalAmount && 
+    members.length > 0 &&
     (paymentMethod === 'direct' ? !!transactionId : !!file)
 
   const handleSubmit = async () => {
@@ -156,17 +119,18 @@ function UploadForm({
     setUploadProgress(0)
 
     const fd = new FormData()
-    fd.append('sectorUnitId',  selectedSectorId)
-    fd.append('billingMonth',  String(ethPeriod.month))
-    fd.append('billingYear',   String(ethPeriod.year))
-    fd.append('totalAmount',   totalAmount)
+    fd.append('members', JSON.stringify(members))
+    fd.append('periodMonth', String(periodMonth))
+    fd.append('periodYear', String(periodYear))
+    fd.append('totalAmount', totalAmount)
     fd.append('bankName', selectedBank ? selectedBank.name : 'Commercial Bank of Ethiopia')
+    fd.append('method', paymentMethod === 'direct' ? 'Bank Transfer' : 'Bank Transfer')
     fd.append('notes', notes)
     if (paymentMethod === 'direct' && transactionId) fd.append('transactionId', transactionId)
     if (paymentMethod === 'manual' && file) fd.append('receipt', file)
 
     try {
-      await api.post('/sector-payments/upload-slip', fd, {
+      await api.post('/payments/bulk-upload', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => { if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100)) }
       })
@@ -179,8 +143,7 @@ function UploadForm({
     }
   }
 
-  const ethMonths = Array.from({ length: 13 }, (_, i) => i + 1)
-  const years     = Array.from({ length: 11 }, (_, i) => ethPeriod.year + 5 - i)
+
 
   return (
     <div className="px-5 pb-5 pt-2 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -269,78 +232,15 @@ function UploadForm({
         </div>
       )}
 
-      {/* Sector Type (admin only) */}
-      {user?.role !== 'sector_officer' && (
-        <>
-          <div>
-            <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">Sector Type</label>
-            <select value={selectedSectorType} onChange={e => setSelectedSectorType(e.target.value)} className="input">
-              <option value="">Select sector type</option>
-              {sectorTypes.map((s: any) => (
-                <option key={s.id} value={s.name}>
-                  {s.name === 'Institution' ? t('common.institution')
-                    : s.name === 'Rural Cluster' ? t('common.rural')
-                    : s.name === 'Urban Woreda'  ? t('common.urban')
-                    : s.name === 'Secondary School' ? t('common.secondary_school')
-                    : s.name === 'Health Institution' ? t('common.health_institution')
-                    : s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-              Sector Unit <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedSectorId}
-              disabled={!selectedSectorType}
-              onChange={e => setSelectedSectorId(e.target.value)}
-              className="input"
-            >
-              <option value="">Select sector unit</option>
-              {sectors.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-        </>
-      )}
-
-      {/* Total Amount – auto-fetched (Manual Pay only) */}
-      {paymentMethod !== 'direct' && (
-        <div>
-          <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-            Total Amount Paid (ETB) <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={totalAmount}
-              onChange={e => setTotalAmount(e.target.value)}
-              placeholder="e.g. 50000"
-              className="input pr-28"
-            />
-            {fetchingAmount && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-slate-400">
-                <Loader2 className="w-3 h-3 animate-spin" /> Fetching…
-              </span>
-            )}
-            {!fetchingAmount && collectedAmount !== null && collectedAmount > 0 && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                Auto-filled
-              </span>
-            )}
-          </div>
-          {!fetchingAmount && collectedAmount !== null && (
-            <p className="text-[10px] mt-1 text-black font-bold">
-              {collectedAmount > 0
-                ? `Collected from paid members: ETB ${Number(collectedAmount).toLocaleString()}`
-                : 'No member payments recorded for this period yet.'}
-            </p>
-          )}
-        </div>
-      )}
+      {/* Selected Members Summary */}
+      <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+          Paying for {members.length} members (Month {periodMonth}/{periodYear})
+        </p>
+        <p className="text-[10px] mt-1 text-slate-500">
+          Total Fee: <strong className="text-black dark:text-white">ETB {Number(totalAmount).toLocaleString()}</strong>
+        </p>
+      </div>
 
       {/* Transaction ID or Reference No (Direct Pay only) */}
       {paymentMethod === 'direct' && (
@@ -453,7 +353,7 @@ function UploadForm({
 }
 
 /* ─── Main Modal ─────────────────────────────────────────────────────────── */
-export default function SectorDepositMethodModal({ onClose, onSuccess }: SectorDepositMethodModalProps) {
+export default function BulkPaymentMethodModal({ members, periodMonth, periodYear, onClose, onSuccess }: BulkPaymentMethodModalProps) {
   const [step, setStep]                 = useState<Step>('choose_method')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null)
   const [selectedBank, setSelectedBank] = useState<BankOption | null>(null)
@@ -653,6 +553,9 @@ export default function SectorDepositMethodModal({ onClose, onSuccess }: SectorD
                 transition={{ type: 'tween', duration: 0.2, ease: 'easeInOut' }}
               >
                 <UploadForm
+                  members={members}
+                  periodMonth={periodMonth}
+                  periodYear={periodYear}
                   selectedBank={selectedBank}
                   paymentMethod={paymentMethod}
                   onClose={onClose}

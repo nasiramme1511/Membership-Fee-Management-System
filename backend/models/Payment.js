@@ -34,11 +34,15 @@ const Payment = sequelize.define('Payment', {
   receivedBy: { type: DataTypes.STRING(255), allowNull: false },
 
   status: {
-    type: DataTypes.ENUM('Paid', 'Partial', 'Overpaid'),
+    type: DataTypes.ENUM('Paid', 'Partial', 'Overpaid', 'Pending', 'Rejected'),
     defaultValue: 'Paid'
   },
   notes:            { type: DataTypes.TEXT, allowNull: true },
-  receiptGenerated: { type: DataTypes.BOOLEAN, defaultValue: true }
+  receiptGenerated: { type: DataTypes.BOOLEAN, defaultValue: true },
+
+  transactionId: { type: DataTypes.STRING(255), allowNull: true },
+  receiptFile: { type: DataTypes.STRING(255), allowNull: true },
+  bankName: { type: DataTypes.STRING(255), allowNull: true }
 
 }, {
   tableName: 'payments',

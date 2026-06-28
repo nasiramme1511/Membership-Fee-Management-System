@@ -150,14 +150,15 @@ export default function Reports() {
       {sectorReportData && !sectorReportLoading && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: t('report.total_paid'), value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
-            { label: t('report.total_paid'), value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-            { label: t('report.total_unpaid'), value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: UserMinus, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
-            { label: t('report.collected_revenue'), value: `ETB ${sectorReportData.summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Wallet, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-            { label: t('report.collection_rate'), value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' }
+            { label: 'Total Members', value: sectorReportData.summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', iconBg: 'bg-blue-100/80 dark:bg-blue-500/20', border: 'border-blue-200/70 dark:border-blue-700/40', shadow: 'shadow-[0_4px_20px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_30px_rgba(59,130,246,0.22)]', accent: 'from-blue-500 to-indigo-500' },
+            { label: t('report.total_paid'), value: sectorReportData.summary.totalPaidMembers.toLocaleString(), icon: UserCheck, color: 'text-emerald-600', iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/20', border: 'border-emerald-200/70 dark:border-emerald-700/40', shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.22)]', accent: 'from-emerald-400 to-teal-500' },
+            { label: t('report.total_unpaid'), value: sectorReportData.summary.totalUnpaidMembers.toLocaleString(), icon: UserMinus, color: 'text-rose-600', iconBg: 'bg-rose-100/80 dark:bg-rose-500/20', border: 'border-rose-200/70 dark:border-rose-700/40', shadow: 'shadow-[0_4px_20px_rgba(225,29,72,0.12)] hover:shadow-[0_8px_30px_rgba(225,29,72,0.22)]', accent: 'from-rose-500 to-pink-500' },
+            { label: t('report.collected_revenue'), value: sectorReportData.summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), icon: Wallet, color: 'text-amber-600', iconBg: 'bg-amber-100/80 dark:bg-amber-500/20', border: 'border-amber-200/70 dark:border-amber-700/40', shadow: 'shadow-[0_4px_20px_rgba(245,158,11,0.12)] hover:shadow-[0_8px_30px_rgba(245,158,11,0.22)]', accent: 'from-amber-400 to-orange-500' },
+            { label: t('report.collection_rate'), value: `${sectorReportData.summary.overallCollectionRate}%`, icon: Banknote, color: 'text-purple-600', iconBg: 'bg-purple-100/80 dark:bg-purple-500/20', border: 'border-purple-200/70 dark:border-purple-700/40', shadow: 'shadow-[0_4px_20px_rgba(168,85,247,0.12)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.22)]', accent: 'from-purple-500 to-pink-500' }
           ].map((s, idx) => (
-            <div key={idx} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
+            <div key={idx} className={`relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 ${s.border} ${s.shadow} transition-shadow duration-300 flex items-center gap-4 overflow-hidden`}>
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${s.accent} rounded-t-xl`} />
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.iconBg}`}>
                 <s.icon className={`w-6 h-6 ${s.color}`} />
               </div>
               <div className="min-w-0 flex-1">
@@ -273,12 +274,12 @@ export default function Reports() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('sector.name')}</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('common.total_members')}</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.total_paid')}</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.total_unpaid')}</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.collected_revenue')}</th>
-                  <th className="py-4 px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">{t('report.collection_rate')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('sector.name')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.total_members')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('report.total_paid')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('report.total_unpaid')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('report.collected_revenue')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('report.collection_rate')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +289,7 @@ export default function Reports() {
                   </tr>
                 ) : (
                   paginatedSectors.map((sector: any) => (
-                    <tr key={sector.sectorId} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                    <tr key={sector.sectorId} className="border-b border-slate-100 dark:border-slate-700/50 odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
                       <td className="py-4 px-5 text-sm font-bold text-slate-700 dark:text-slate-200">{sector.sectorName}</td>
                       <td className="py-4 px-5 text-sm text-slate-600 dark:text-slate-400">{sector.totalMembers}</td>
                       <td className="py-4 px-5">

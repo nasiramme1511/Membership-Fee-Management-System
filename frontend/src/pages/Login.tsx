@@ -217,8 +217,8 @@ export default function Login() {
             ['25%','5%'],['48%','4%'],['78%','9%'],['5%','38%'],['4%','58%'],['95%','75%'],['96%','52%'],
             ['48%','82%'],['35%','10%'],['68%','25%'],['25%','82%'],['88%','25%'],['58%','18%'],['35%','55%'],
             ['58%','55%'],['35%','35%'],['68%','65%'],['58%','90%'],['35%','90%'],
-          ].map(([cx,cy]) => (
-            <circle cx={cx} cy={cy} r="2.5" fill="#D4AF37" opacity="0.3">
+          ].map(([cx,cy], i) => (
+            <circle key={`glow-${i}`} cx={cx} cy={cy} r="2.5" fill="#D4AF37" opacity="0.3">
               <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.8s" repeatCount="indefinite" />
               <animate attributeName="r" values="2.5;3.5;2.5" dur="1.8s" repeatCount="indefinite" />
             </circle>

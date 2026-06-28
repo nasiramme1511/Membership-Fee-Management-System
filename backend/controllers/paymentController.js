@@ -7,6 +7,9 @@ const Member   = require('../models/Member');
 const Contribution = require('../models/Contribution');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 const { createAuditLog } = require('../utils/auditLogger');
+const paymentVerificationService = require('../services/paymentVerificationService');
+const fs = require('fs');
+const path = require('path');
 
 // ─── Record a new payment ─────────────────────────────────────────────────────
 exports.createPayment = async (req, res) => {
@@ -305,6 +308,144 @@ exports.bulkPayments = async (req, res) => {
   }
 };
 
+// ─── Bulk payment upload (Direct / Manual) ────────────────────────────────────
+exports.bulkPaymentUpload = async (req, res) => {
+  try {
+    const { members, totalAmount, bankName, transactionId, method, periodMonth, periodYear } = req.body;
+    let memberList = [];
+    try {
+      memberList = JSON.parse(members);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: 'Invalid members data format' });
+    }
+
+    if (!memberList || memberList.length === 0) {
+      return res.status(400).json({ success: false, message: 'No members selected for payment.' });
+    }
+
+    if (!req.file && !transactionId) {
+      return res.status(400).json({ success: false, message: 'Either a receipt file or a Transaction ID (TID) is required.' });
+    }
+
+    let receiptFileName = req.file ? req.file.filename : null;
+    let paymentStatus = 'Pending';
+    let autoVerified = false;
+    let verificationResult = null;
+    const depositAmount = Number(totalAmount);
+
+    if (!req.file && transactionId) {
+      verificationResult = await paymentVerificationService.verifyTransaction(bankName, transactionId, depositAmount);
+      
+      if (verificationResult.serverError) {
+        // Leave as Pending if server error
+      } else if (!verificationResult.verified) {
+        return res.status(400).json({ success: false, message: `Automatic verification failed: ${verificationResult.error}` });
+      } else {
+        autoVerified = true;
+        paymentStatus = 'Paid';
+        try {
+          const pdfReceipt = await paymentVerificationService.generateReceiptFromVerification(
+            bankName,
+            verificationResult.transactionId || transactionId,
+            verificationResult.amount || depositAmount,
+            verificationResult.payer,
+            verificationResult.receiver,
+            verificationResult.date
+          );
+          if (pdfReceipt) receiptFileName = pdfReceipt;
+        } catch (genErr) {
+          console.error('Receipt PDF generation error:', genErr);
+        }
+      }
+    }
+
+    const createdPayments = [];
+    const errors = [];
+    const sharedReceiptId = `RCP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    for (let i = 0; i < memberList.length; i++) {
+      try {
+        const memberData = memberList[i];
+        const member = await Member.findOne({ where: { memberId: memberData.memberId } });
+        if (!member) {
+          errors.push({ memberId: memberData.memberId, error: 'Member not found' });
+          continue;
+        }
+
+        const existing = await Payment.findOne({
+          where: { memberDbId: member.id, periodMonth, periodYear, status: 'Paid' }
+        });
+        if (existing) {
+          errors.push({ memberId: member.memberId, error: `Already paid for ${periodMonth}/${periodYear}` });
+          continue;
+        }
+        
+        // Ensure pending doesn't duplicate either
+        const existingPending = await Payment.findOne({
+          where: { memberDbId: member.id, periodMonth, periodYear, status: 'Pending' }
+        });
+        if (existingPending) {
+           errors.push({ memberId: member.memberId, error: `Already has a pending payment for ${periodMonth}/${periodYear}` });
+           continue;
+        }
+
+        const payment = await Payment.create({
+          receiptId: `${sharedReceiptId}-${i}`, // Make unique per member but easily identifiable as group
+          memberDbId: member.id,
+          memberId: member.memberId,
+          amount: memberData.amount || member.contributionMonthlyFee || 0,
+          currency: 'ETB',
+          frequency: 'Monthly',
+          method: method || 'Bank Transfer',
+          paymentDate: new Date(),
+          periodMonth: periodMonth,
+          periodYear: periodYear,
+          receivedBy: req.user?.username || 'Admin',
+          status: paymentStatus,
+          notes: req.body.notes || null,
+          transactionId: transactionId || null,
+          receiptFile: receiptFileName,
+          bankName: bankName || 'Commercial Bank of Ethiopia'
+        });
+        
+        // Skip Receipt generation for pending, or generate it but without "Paid" stamp? Let's skip for pending
+        if (paymentStatus === 'Paid') {
+          await Receipt.create({
+            receiptId: payment.receiptId,
+            paymentDbId: payment.id,
+            memberDbId: member.id,
+            memberId: member.memberId,
+            memberName: member.fullName,
+            amount: payment.amount,
+            currency: payment.currency,
+            periodMonth: payment.periodMonth,
+            periodYear: payment.periodYear,
+            paymentMethod: payment.method,
+            issuedBy: payment.receivedBy,
+            branch: member.branch
+          });
+        }
+
+        createdPayments.push(payment);
+      } catch (err) {
+        errors.push({ memberId: memberList[i].memberId, error: err.message });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: autoVerified 
+        ? `Successfully verified and recorded payments for ${createdPayments.length} members.`
+        : `Successfully submitted ${createdPayments.length} payments for review.`,
+      data: createdPayments,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // ─── Get monthly payment status for all members ────────────────────────────────
 exports.getMonthlyStatus = async (req, res) => {
   try {
@@ -341,8 +482,10 @@ exports.getMonthlyStatus = async (req, res) => {
     // Dynamic Filter for paymentStatus using targetYear/targetMonth
     if (paymentStatus === 'Paid') {
       memberWhere.id = { [Op.in]: sequelize.literal(`(SELECT memberDbId FROM payments WHERE periodMonth = ${targetMonth} AND periodYear = ${targetYear} AND status = 'Paid')`) };
+    } else if (paymentStatus === 'Pending') {
+      memberWhere.id = { [Op.in]: sequelize.literal(`(SELECT memberDbId FROM payments WHERE periodMonth = ${targetMonth} AND periodYear = ${targetYear} AND status = 'Pending')`) };
     } else if (paymentStatus === 'Unpaid') {
-      memberWhere.id = { [Op.notIn]: sequelize.literal(`(SELECT memberDbId FROM payments WHERE periodMonth = ${targetMonth} AND periodYear = ${targetYear} AND status = 'Paid')`) };
+      memberWhere.id = { [Op.notIn]: sequelize.literal(`(SELECT memberDbId FROM payments WHERE periodMonth = ${targetMonth} AND periodYear = ${targetYear} AND status IN ('Paid', 'Pending'))`) };
     }
 
     const offset = (Number(page) - 1) * Number(limit);
@@ -353,7 +496,7 @@ exports.getMonthlyStatus = async (req, res) => {
         {
           model: Payment,
           as: 'payments',
-          where: { periodMonth: targetMonth, periodYear: targetYear, status: 'Paid' },
+          where: { periodMonth: targetMonth, periodYear: targetYear, status: { [Op.in]: ['Paid', 'Pending'] } },
           required: false // Left outer join
         },
         {
@@ -383,7 +526,7 @@ exports.getMonthlyStatus = async (req, res) => {
         fullName: obj.fullName,
         branch: obj.sectorUnit?.name || obj.sector || obj.branch,
         fee: obj.contribution?.monthlyFee || obj.contributionMonthlyFee || 0,
-        paymentStatus: currentPayment ? 'Paid' : 'Unpaid',
+        paymentStatus: currentPayment ? currentPayment.status : 'Unpaid',
         paymentDate: currentPayment ? currentPayment.paymentDate : null,
         paymentId: currentPayment ? currentPayment.id : null
       };

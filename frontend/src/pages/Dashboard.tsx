@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import OrganizationTree from '../components/OrganizationTree'
-import { Users, DollarSign, TrendingUp, AlertTriangle, Building2, Bot, Sparkles, Download, FileText, BarChart3, PieChartIcon } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, TrendingDown, AlertTriangle, Building2, Bot, Sparkles, Download, FileText, BarChart3, PieChartIcon } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
@@ -180,37 +180,49 @@ export default function Dashboard() {
       title: isSectorOfficer ? t('common.sector_members') : t('common.total_members'),
       value: (analyticsSummary?.totalMembers ?? data.summary.totalMembers).toLocaleString(),
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: 'border-blue-100 dark:border-blue-900/30',
-      subtext: `${data.summary.activeMembers} ${t('common.active')} ${t('common.members')}`
+      iconBg: 'bg-indigo-100/80 dark:bg-indigo-500/20',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      trend: '+12%',
+      trendColor: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+      border: 'border-indigo-200/70 dark:border-indigo-700/40',
+      shadow: 'shadow-[0_4px_20px_rgba(99,102,241,0.12)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.22)]',
+      accent: 'from-indigo-500 to-violet-500',
     },
     {
       title: t('common.monthly_revenue'),
       value: `ETB ${Number(data.summary.monthlyRevenue).toLocaleString()}`,
       icon: DollarSign,
-      color: 'text-emerald-600',
-      bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: 'border-emerald-100 dark:border-emerald-900/30',
-      subtext: `${t('common.current_month')}`
+      iconBg: 'bg-purple-100/80 dark:bg-purple-500/20',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      trend: '+8%',
+      trendColor: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+      border: 'border-purple-200/70 dark:border-purple-700/40',
+      shadow: 'shadow-[0_4px_20px_rgba(168,85,247,0.12)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.22)]',
+      accent: 'from-purple-500 to-pink-500',
     },
     {
       title: t('common.yearly_revenue'),
       value: `ETB ${Number(data.summary.yearlyRevenue).toLocaleString()}`,
       icon: TrendingUp,
-      color: 'text-[var(--gold)]',
-      bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: 'border-[var(--gold)]/30',
-      subtext: `${t('common.current_year')}`
+      iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/20',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      trend: '-2%',
+      trendColor: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+      border: 'border-emerald-200/70 dark:border-emerald-700/40',
+      shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.22)]',
+      accent: 'from-emerald-400 to-teal-500',
     },
     {
       title: t('common.payment_status'),
       value: `${analyticsSummary?.completionRate ?? 0}%`,
       icon: AlertTriangle,
-      color: (analyticsSummary?.completionRate ?? 0) >= 75 ? 'text-emerald-600' : (analyticsSummary?.completionRate ?? 0) >= 50 ? 'text-amber-500' : 'text-rose-600',
-      bgColor: 'bg-white dark:bg-slate-900',
-      borderColor: (analyticsSummary?.completionRate ?? 0) >= 75 ? 'border-emerald-100 dark:border-emerald-900/30' : (analyticsSummary?.completionRate ?? 0) >= 50 ? 'border-amber-100 dark:border-amber-900/30' : 'border-rose-100 dark:border-rose-900/30',
-      subtext: `${analyticsSummary?.paidMembers ?? 0} paid / ${analyticsSummary?.unpaidMembers ?? data.summary.pendingPayments} unpaid`
+      iconBg: 'bg-amber-100/80 dark:bg-amber-500/20',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      trend: '+24%',
+      trendColor: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+      border: 'border-amber-200/70 dark:border-amber-700/40',
+      shadow: 'shadow-[0_4px_20px_rgba(245,158,11,0.12)] hover:shadow-[0_8px_30px_rgba(245,158,11,0.22)]',
+      accent: 'from-amber-400 to-orange-500',
     }
   ]
 
@@ -261,27 +273,29 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, idx) => (
           <motion.div
             key={idx}
-            whileHover={{ scale: 1.02, y: -5 }}
-            transition={{ type: "spring", bounce: 0.6 }}
-            className={`card border-b-2 ${card.borderColor} flex flex-col gap-2 group shadow-[0_10px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all relative overflow-hidden`}
+            whileHover={{ y: -3 }}
+            transition={{ type: "spring", bounce: 0.5 }}
+            className={`relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 ${card.border} ${card.shadow} transition-shadow duration-300 flex flex-col justify-between overflow-hidden`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <div className={`p-2 rounded-lg bg-slate-50 dark:bg-slate-800 group-hover:bg-[var(--navy)] transition-colors`}>
-                <card.icon className={`w-4 h-4 ${card.color} group-hover:text-white`} />
+            {/* Accent line on top */}
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.accent} rounded-t-xl`} />
+            <div className="flex items-start justify-between mb-4 mt-1">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.iconBg}`}>
+                <card.icon className={`w-5 h-5 ${card.iconColor}`} />
               </div>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{t('common.live')}</span>
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${card.trendColor}`}>
+                {card.trend.startsWith('+') ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                {card.trend.replace(/[+-]/, '')}
+              </div>
             </div>
             <div>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 tracking-wide">{card.title}</p>
               <p className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{card.value}</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{card.title}</p>
             </div>
-            <p className="text-[9px] font-bold text-slate-400 border-t border-slate-50 dark:border-slate-800 pt-1.5 mt-1 relative z-10">
-              {card.subtext}
-            </p>
           </motion.div>
         ))}
       </motion.div>

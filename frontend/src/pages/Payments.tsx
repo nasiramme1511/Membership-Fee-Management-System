@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import { useAuth } from '../context/AuthContext'
 import {
-  Search, Filter, Plus, Download, Upload, ArrowUpDown, ChevronDown,
+  Search, Filter, Plus, Download, ArrowUpDown, ChevronDown,
   Eye, Printer, X, Save, Loader2, FileText, CreditCard, Wallet, Users,
   Receipt, Calendar, CheckCircle2, AlertTriangle, Ban, Clock, Building2,
   ArrowLeft, Check, ChevronLeft, ChevronRight, Trash2, Banknote,
@@ -19,6 +19,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import DeleteAllConfirmDialog from '../components/DeleteAllConfirmDialog'
 import SectorPaymentModal from '../components/SectorPaymentModal'
 import SectorDepositMethodModal from '../components/SectorDepositMethodModal'
+import BulkPaymentMethodModal from '../components/BulkPaymentMethodModal'
 import SectorPaymentAuditLogsModal from '../components/SectorPaymentAuditLogsModal'
 import { useToast } from '../components/Toast'
 
@@ -59,6 +60,9 @@ interface MemberPaymentStatus {
 export default function Payments() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false)
+  const [bulkMembersToPay, setBulkMembersToPay] = useState<MemberPaymentStatus[]>([])
+
   const { t } = useTranslation()
   const toast = useToast()
   const [activeTab, setActiveTab] = useState<'monthly' | 'history' | 'sector'>('monthly')
@@ -474,33 +478,8 @@ export default function Payments() {
   const handleSaveSelected = async () => {
     const selectedMembers = members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid')
     if (selectedMembers.length === 0) return
-    setConfirmSaveSelected(true)
-  }
-
-  const doSaveSelected = async () => {
-    setConfirmSaveSelected(false)
-    const selectedMembers = members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid')
-    setLoading(true)
-    const toastId = toast.loading(`Recording ${selectedMembers.length} Payments...`, 'Processing bulk payment recording.')
-    try {
-      const payload = selectedMembers.map(member => ({
-        member: member.memberId,
-        amount: member.fee,
-        method: 'Cash',
-        paymentDate: new Date().toISOString(),
-        periodMonth: Number(selectedMonthNum),
-        periodYear: Number(selectedYearNum),
-        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin',
-        status: 'Paid'
-      }))
-      await api.post('/payments/bulk', payload)
-      toast.update(toastId, 'success', `${selectedMembers.length} Payments Recorded`, `Successfully recorded payments for ${selectedMembers.length} members.`)
-      await fetchMonthlyStatus()
-    } catch (err: any) {
-      toast.update(toastId, 'error', 'Bulk Payment Failed', err.response?.data?.message || 'Could not record bulk payments. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+    setBulkMembersToPay(selectedMembers)
+    setShowBulkPaymentModal(true)
   }
 
   const handlePayAllFiltered = async () => {
@@ -522,37 +501,11 @@ export default function Payments() {
 
       if (unpaidMembers.length === 0) { setLoading(false); return }
 
-      setPendingPayAllMembers(unpaidMembers)
-      setConfirmPayAllCount(unpaidMembers.length)
-      setConfirmPayAll(true)
+      setBulkMembersToPay(unpaidMembers)
+      setShowBulkPaymentModal(true)
       setLoading(false)
     } catch (err: any) {
       console.error(err)
-      setLoading(false)
-    }
-  }
-
-  const doPayAll = async () => {
-    setConfirmPayAll(false)
-    setLoading(true)
-    const toastId = toast.loading(`Paying All ${pendingPayAllMembers.length} Members...`, 'Processing full bulk payment for all unpaid members.')
-    try {
-      const payload = pendingPayAllMembers.map(member => ({
-        member: member.memberId,
-        amount: member.fee,
-        method: 'Cash',
-        paymentDate: new Date().toISOString(),
-        periodMonth: Number(selectedMonthNum),
-        periodYear: Number(selectedYearNum),
-        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin',
-        status: 'Paid'
-      }))
-      await api.post('/payments/bulk', payload)
-      toast.update(toastId, 'success', `All Payments Recorded`, `Successfully recorded payments for all ${pendingPayAllMembers.length} unpaid members.`)
-      await fetchMonthlyStatus()
-    } catch (err: any) {
-      toast.update(toastId, 'error', 'Bulk Payment Failed', err.response?.data?.message || 'Could not process all payments.')
-    } finally {
       setLoading(false)
     }
   }
@@ -708,20 +661,8 @@ export default function Payments() {
       className="space-y-6"
     >
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('common.payments')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">{t('common.payment_history')}</p>
-        </div>
+        <div></div>
         <div className="flex items-center gap-2">
-          {activeTab === 'sector' && (
-            <button
-              onClick={() => { setEditPayment(null); setSectorModalMode('create'); setShowDepositMethodModal(true) }}
-              className="btn btn-primary flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {t('common.upload_sector_payment_slip')}
-            </button>
-          )}
           <button
             onClick={activeTab === 'monthly' ? handleExportMonthly : activeTab === 'history' ? handleExportHistory : undefined}
             disabled={exporting || activeTab === 'sector'}
@@ -934,15 +875,18 @@ export default function Payments() {
       {activeTab !== 'sector' && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
           {[
-            { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-            { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-            { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' }
+            { label: t('common.total_members'), value: summary.totalMembers.toLocaleString(), icon: Users, iconBg: 'bg-blue-100/80 dark:bg-blue-500/20', iconColor: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200/70 dark:border-blue-700/40', shadow: 'shadow-[0_4px_20px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_30px_rgba(59,130,246,0.22)]', accent: 'from-blue-500 to-indigo-500' },
+            { label: t('common.monthly_revenue'), value: `${Number(summary.totalMonthlyRevenue).toLocaleString()} ETB`, icon: Wallet, iconBg: 'bg-emerald-100/80 dark:bg-emerald-500/20', iconColor: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200/70 dark:border-emerald-700/40', shadow: 'shadow-[0_4px_20px_rgba(16,185,129,0.12)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.22)]', accent: 'from-emerald-400 to-teal-500' },
+            { label: t('common.yearly_revenue'), value: `${Number(summary.totalYearlyRevenue).toLocaleString()} ETB`, icon: Banknote, iconBg: 'bg-purple-100/80 dark:bg-purple-500/20', iconColor: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200/70 dark:border-purple-700/40', shadow: 'shadow-[0_4px_20px_rgba(168,85,247,0.12)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.22)]', accent: 'from-purple-500 to-pink-500' },
           ].map(s => (
-            <div key={s.label} className="card flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`w-5 h-5 ${s.color}`} /></div>
+            <div key={s.label} className={`relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 ${s.border} ${s.shadow} transition-shadow duration-300 flex items-center gap-3 overflow-hidden`}>
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${s.accent} rounded-t-xl`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.iconBg}`}>
+                <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+              </div>
               <div>
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+                <p className="text-xl font-black text-slate-900 dark:text-white">{s.value}</p>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{s.label}</p>
               </div>
             </div>
           ))}
@@ -986,16 +930,16 @@ export default function Payments() {
 
           <div className="table-container">
             <table className="table">
-              <thead className="table-header">
-                <tr>
-                  <th className="w-10">#</th>
-                  <th>{t('common.member_id')}</th>
-                  <th>{t('common.full_name')}</th>
-                  <th>{t('common.branch')}</th>
-                  <th>{t('common.fee')}</th>
-                  <th>{t('common.payment_status')}</th>
-                  <th>{t('common.payment_date')}</th>
-                  <th className="w-24 text-center">{t('common.action')}</th>
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">#</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.member_id')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.full_name')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.branch')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">{t('common.fee')}</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Payment<br /><span className="text-[11px]">Status</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Payment<br /><span className="text-[11px]">Date</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700 text-center">{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -1027,8 +971,8 @@ export default function Payments() {
                       <td className="text-xs">{member.branch}</td>
                       <td className="text-sm font-bold">ETB {Number(member.fee).toLocaleString()}</td>
                       <td>
-                        <span className={`badge ${member.paymentStatus === 'Paid' ? 'badge-success' : 'badge-error'}`}>
-                          {member.paymentStatus === 'Paid' ? t('common.paid') : t('common.unpaid')}
+                        <span className={`badge ${member.paymentStatus === 'Paid' ? 'badge-success' : member.paymentStatus === 'Pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'badge-error'}`}>
+                          {member.paymentStatus === 'Paid' ? t('common.paid') : member.paymentStatus === 'Pending' ? 'Pending' : t('common.unpaid')}
                         </span>
                       </td>
                       <td className="text-xs">
@@ -1143,9 +1087,9 @@ export default function Payments() {
           )}
           <div className="table-container">
             <table className="table">
-              <thead className="table-header">
-                <tr>
-                  <th className="w-10">
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="w-10 py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">
                     <input
                       type="checkbox"
                       checked={selectedPaymentIds.length === payments.length && payments.length > 0}
@@ -1153,14 +1097,14 @@ export default function Payments() {
                       className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                   </th>
-                  <th>Receipt ID</th>
-                  <th>Member</th>
-                  <th>Amount</th>
-                  <th>Currency</th>
-                  <th>Method</th>
-                  <th>Date</th>
-                  <th>Received By</th>
-                  <th>Status</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Receipt ID</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Member</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Amount</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Currency</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Method</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Date</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Received By</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Status</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -1203,23 +1147,27 @@ export default function Payments() {
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card border-b-2 border-blue-200 dark:border-blue-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.total_deposited')}</p>
+            <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800 shadow-[0_2px_10px_rgba(59,130,246,0.08)] overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-xl" />
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans mt-1">{t('common.total_deposited')}</p>
               <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(sectorPaymentSummary.totalAmount).toLocaleString()}</p>
               <p className="text-[9px] text-slate-400 mt-0.5">{t('common.approved_deposits')}</p>
             </div>
-            <div className="card border-b-2 border-emerald-200 dark:border-emerald-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.remaining_balance')}</p>
+            <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 border-emerald-200 dark:border-emerald-800 shadow-[0_2px_10px_rgba(16,185,129,0.08)] overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-t-xl" />
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans mt-1">{t('common.remaining_balance')}</p>
               <p className="text-xl font-black text-slate-900 dark:text-white">ETB {Number(sectorPaymentSummary.remainingBalance).toLocaleString()}</p>
               <p className="text-[9px] text-slate-400 mt-0.5">{t('common.collection_deposits')}</p>
             </div>
-            <div className="card border-b-2 border-[var(--gold)]/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.payment_percentage')}</p>
+            <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 border-amber-200 dark:border-amber-800 shadow-[0_2px_10px_rgba(245,158,11,0.08)] overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-amber-600 rounded-t-xl" />
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans mt-1">{t('common.payment_percentage')}</p>
               <p className="text-xl font-black text-emerald-600">{sectorPaymentSummary.collectionRate}%</p>
               <p className="text-[9px] text-slate-400 mt-0.5 font-sans">{t('common.paid_members_rate')}</p>
             </div>
-            <div className="card border-b-2 border-amber-200 dark:border-amber-900/30">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans">{t('common.pending_approvals')}</p>
+            <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 border-2 border-amber-200 dark:border-amber-800 shadow-[0_2px_10px_rgba(245,158,11,0.08)] overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 to-amber-600 rounded-t-xl" />
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-sans mt-1">{t('common.pending_approvals')}</p>
               <p className="text-xl font-black text-amber-600">{sectorPaymentSummary.totalPending}</p>
               <p className="text-[9px] text-slate-400 mt-0.5 font-sans">{t('common.awaiting_review')} • {sectorPaymentSummary.totalApproved} {t('common.approved')}</p>
             </div>
@@ -1253,17 +1201,17 @@ export default function Payments() {
 
           <div className="table-container">
             <table className="table">
-              <thead className="table-header font-sans">
-                <tr>
-                  <th>Period</th>
-                  <th>Sector Unit</th>
-                  <th>Amount (ETB)</th>
-                  <th>Approval Status</th>
-                  <th>Validation</th>
-                  <th>Receipt</th>
-                  <th>Uploaded By</th>
-                  <th>Date</th>
-                  <th className="text-right">{t('common.action')}</th>
+              <thead>
+                <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Period</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Sector Unit</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Amount</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">Approval<br /><span className="text-[11px]">Status</span></th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Validation</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Receipt</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Uploaded By</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700">Date</th>
+                  <th className="py-4 px-5 text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap border-b border-slate-200 dark:border-slate-700 text-right">{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -1283,7 +1231,7 @@ export default function Payments() {
                 ) : sectorPayments.length === 0 ? (
                   <tr key="empty">
                     <td colSpan={10} className="text-center py-8 text-gray-500 font-sans">
-                      No sector deposits found. Click "Upload Sector Payment Slip" to create one.
+                      No sector deposits found.
                     </td>
                   </tr>
                 ) : (
@@ -1488,28 +1436,6 @@ export default function Payments() {
       )}
 
       <ConfirmDialog
-        open={confirmSaveSelected}
-        variant="info"
-        title={t('common_ui.record_payments_title')}
-        message={t('common_ui.record_payments_message', { count: members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length, month: t(`common.eth_month_${selectedMonthNum}`), year: selectedYearNum })}
-        confirmLabel={t('common.save_selected')}
-        cancelLabel={t('common.cancel')}
-        onConfirm={doSaveSelected}
-        onCancel={() => setConfirmSaveSelected(false)}
-      />
-
-      <ConfirmDialog
-        open={confirmPayAll}
-        variant="info"
-        title={t('common_ui.pay_all_title')}
-        message={t('common_ui.pay_all_message', { count: confirmPayAllCount, month: t(`common.eth_month_${selectedMonthNum}`), year: selectedYearNum })}
-        confirmLabel={t('common.pay_all_filtered')}
-        cancelLabel={t('common.cancel')}
-        onConfirm={doPayAll}
-        onCancel={() => setConfirmPayAll(false)}
-      />
-
-      <ConfirmDialog
         open={confirmDeletePayment.open}
         variant="danger"
         title={t('common_ui.reverse_payment_title')}
@@ -1539,6 +1465,19 @@ export default function Payments() {
         onConfirm={doDeleteAllPayments}
         onCancel={() => setConfirmDeleteAllPayments(false)}
       />
+
+      {showBulkPaymentModal && (
+        <BulkPaymentMethodModal
+          members={bulkMembersToPay}
+          periodMonth={Number(selectedMonthNum)}
+          periodYear={Number(selectedYearNum)}
+          onClose={() => setShowBulkPaymentModal(false)}
+          onSuccess={() => {
+            fetchMonthlyStatus()
+            setCheckedIds({}) // clear selection
+          }}
+        />
+      )}
     </motion.div>
   )
 }
