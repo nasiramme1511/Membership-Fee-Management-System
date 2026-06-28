@@ -101,6 +101,7 @@ app.use('/api/auth',          require('./routes/authRoutes'));
 app.use('/api/users',         require('./routes/userRoutes'));
 app.use('/api/members',       require('./routes/memberRoutes'));
 app.use('/api/contributions', require('./routes/contributionRoutes'));
+app.use('/api/payments',      require('./routes/verifyetRoutes'));
 app.use('/api/payments',      require('./routes/paymentRoutes'));
 app.use('/api/receipts',      require('./routes/receiptRoutes'));
 app.use('/api/reports',       require('./routes/reportRoutes'));
@@ -277,6 +278,13 @@ const start = async () => {
     await require('./migrations/alter_user_otp')();
   } catch (e) {
     console.error('⚠️ User OTP migration error:', e.message);
+  }
+
+  // ── Verify.ET payments table ──────────────────────────────────────────────
+  try {
+    await require('./migrations/create_verify_et_payments')();
+  } catch (e) {
+    console.error('⚠️ Verify.ET payments migration error:', e.message);
   }
 
   app.listen(PORT, () => {

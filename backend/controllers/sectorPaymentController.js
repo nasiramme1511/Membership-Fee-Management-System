@@ -80,29 +80,34 @@ exports.uploadSlip = async (req, res) => {
     }
 
     let receiptFileName = req.file ? req.file.filename : null;
-    let autoVerified = false;
+    let verificationResult = null;
 
     // Automatic Verification for Direct Pay (No file uploaded but TID provided)
     if (!req.file && transactionId) {
-      const verificationResult = await paymentVerificationService.verifyTransaction(bankName, transactionId, depositAmount);
+      verificationResult = await paymentVerificationService.verifyTransaction(bankName, transactionId, depositAmount);
 
-      if (!verificationResult.verified) {
+      if (verificationResult.serverError) {
+        // Receipt server is down — don't block payment, leave as PENDING
+      } else if (!verificationResult.verified) {
         return res.status(400).json({ 
           success: false, 
           message: `Automatic verification failed: ${verificationResult.error}` 
         });
-      }
-
-      autoVerified = true;
-      if (status === 'PENDING') {
-        status = 'APPROVED';
-      }
-
-      try {
-        const generatedPdfName = await paymentVerificationService.generateReceiptPDF(verificationResult, null);
-        receiptFileName = generatedPdfName;
-      } catch (pdfErr) {
-        console.error("PDF generation error:", pdfErr);
+      } else {
+        // Generate a PDF receipt immediately from verification data (always reliable)
+        try {
+          const pdfReceipt = await paymentVerificationService.generateReceiptFromVerification(
+            bankName,
+            verificationResult.transactionId || transactionId,
+            verificationResult.amount || depositAmount,
+            verificationResult.payer,
+            verificationResult.receiver,
+            verificationResult.date
+          );
+          if (pdfReceipt) receiptFileName = pdfReceipt;
+        } catch (genErr) {
+          console.error('Receipt PDF generation error:', genErr);
+        }
       }
     }
 
@@ -128,7 +133,6 @@ exports.uploadSlip = async (req, res) => {
     });
 
     if (receiptFileName) {
-      // If it's an uploaded file or an auto-generated one, we rename it consistently
       const ext = path.extname(receiptFileName);
       const newFilename = `sector-payment-${payment.id}-v1${ext}`;
       const oldPath = path.join(__dirname, '..', 'uploads', 'receipts', receiptFileName);
@@ -153,10 +157,27 @@ exports.uploadSlip = async (req, res) => {
       success: true,
       message: status === 'FLAGGED'
         ? 'Sector payment slip uploaded but FLAGGED for review (exceeds collected member payments or validation checks).'
-        : (autoVerified ? 'Payment automatically verified and approved.' : 'Sector payment slip uploaded successfully. Pending admin approval.'),
+        : (verificationResult ? 'Transaction verified successfully. Receipt attached. Pending admin review.' : 'Sector payment slip uploaded successfully. Pending admin approval.'),
       data: payment,
       validation
     });
+
+    // Try to replace generated PDF with real bank receipt (background, non-blocking)
+    if (verificationResult && bankName && transactionId) {
+      paymentVerificationService.downloadBankReceipt(bankName, transactionId)
+        .then(async (filename) => {
+          if (!filename) return;
+          const ext = path.extname(filename);
+          const newFilename = `sector-payment-${payment.id}-v1${ext}`;
+          const oldPath = path.join(__dirname, '..', 'uploads', 'receipts', filename);
+          const newPath = path.join(__dirname, '..', 'uploads', 'receipts', newFilename);
+          if (fs.existsSync(oldPath)) {
+            fs.renameSync(oldPath, newPath);
+            await payment.update({ receiptFile: newFilename });
+          }
+        })
+        .catch(err => console.error('Background receipt download error:', err));
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

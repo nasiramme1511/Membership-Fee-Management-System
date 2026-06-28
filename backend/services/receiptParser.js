@@ -21,15 +21,11 @@ function fetchUrl(targetUrl) {
       const contentType = (res.headers['content-type'] || '').toLowerCase();
       res.on('data', (chunk) => { chunks.push(chunk); });
       res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 400) {
-          const buffer = Buffer.concat(chunks);
-          resolve({ buffer, contentType, statusCode: res.statusCode });
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}`));
-        }
+        const buffer = Buffer.concat(chunks);
+        resolve({ buffer, contentType, statusCode: res.statusCode });
       });
     });
-    req.on('error', reject);
+    req.on('error', (err) => reject(new Error(`Network error: ${err.message}`)));
     req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
     req.end();
   });
@@ -116,6 +112,18 @@ function isErrorPage(text, contentType) {
 
 exports.parseReceipt = async (receiptUrl, providerHint) => {
   const { buffer, contentType, statusCode } = await fetchUrl(receiptUrl);
+
+  if (statusCode >= 500) {
+    return { error: `Receipt server returned HTTP ${statusCode} (unavailable)`, isError: true, isServerError: true, receiptUrl, contentType, statusCode };
+  }
+
+  if (statusCode === 404) {
+    return { error: 'No valid transaction found at this URL (HTTP 404)', isError: true, receiptUrl, contentType, statusCode };
+  }
+
+  if (statusCode >= 400) {
+    return { error: `Receipt page returned HTTP ${statusCode}`, isError: true, receiptUrl, contentType, statusCode };
+  }
 
   let text;
   let isPdf = false;

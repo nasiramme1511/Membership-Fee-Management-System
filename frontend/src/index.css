@@ -7,6 +7,7 @@
 :root {
   --primary: #0B5D3B;
   --gold: #D4AF37;
+  --gold-dim: #B8941E;
   --gold-light: #F1D279;
   --gold-dark: #A68A2B;
   --ebony: #03050a;
@@ -61,7 +62,7 @@ html, body, #root {
     @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--gold)] focus:border-transparent dark:bg-slate-900 dark:border-slate-800 dark:text-white transition-all text-xs;
   }
   .card {
-    @apply bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 hover:shadow-md transition-shadow;
+    @apply bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-100 dark:border-slate-800 p-4 shadow-[0_2px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)] transition-shadow;
   }
   .table-container {
     @apply w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 block;
