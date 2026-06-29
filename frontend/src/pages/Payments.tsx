@@ -82,7 +82,6 @@ export default function Payments() {
   const [monthlySearch, setMonthlySearch] = useState('')
   const [selectedMonthNum, setSelectedMonthNum] = useState(currentMonth)
   const [selectedYearNum, setSelectedYearNum] = useState(currentYear)
-  const [savingId, setSavingId] = useState<number | null>(null)
   const [checkedIds, setCheckedIds] = useState<Record<number, boolean>>({})
 
   // Shared Filters State
@@ -442,72 +441,11 @@ export default function Payments() {
     setCheckedIds(nextChecks)
   }
 
-  const handleSavePayment = async (member: MemberPaymentStatus) => {
-    if (member.paymentStatus === 'Paid') return
-    if (!checkedIds[member._id]) {
-      toast.warning('Payment Not Checked', `Please mark ${member.fullName}'s payment as paid before saving.`)
-      return
-    }
-    setSavingId(member._id)
-    const toastId = toast.loading('Recording Payment...', `Saving payment for ${member.fullName}.`)
-    try {
-      const year = selectedYearNum;
-      const month = selectedMonthNum;
-      const res = await api.post('/payments', {
-        member: member.memberId,
-        amount: member.fee,
-        method: 'Cash',
-        paymentDate: new Date().toISOString(),
-        periodMonth: Number(month),
-        periodYear: Number(year),
-        receivedBy: user?.role === 'sector_officer' ? 'Sector Officer' : 'Admin',
-        status: 'Paid'
-      })
-      toast.update(toastId, 'success', 'Payment Recorded', `${member.fullName}'s payment of ${member.fee.toLocaleString()} ETB has been successfully recorded.`)
-      await fetchMonthlyStatus()
-      if (res.data.data?.receiptId) {
-        setSelectedReceiptId(res.data.data.receiptId)
-      }
-    } catch(err: any) {
-      toast.update(toastId, 'error', 'Payment Failed', err.response?.data?.message || 'Could not record the payment. Please try again.')
-    } finally {
-      setSavingId(null)
-    }
-  }
-
   const handleSaveSelected = async () => {
     const selectedMembers = members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid')
     if (selectedMembers.length === 0) return
     setBulkMembersToPay(selectedMembers)
     setShowBulkPaymentModal(true)
-  }
-
-  const handlePayAllFiltered = async () => {
-    setLoading(true)
-    try {
-      const params: any = { month: selectedMonthNum, year: selectedYearNum, search: monthlySearch, limit: 100000 }
-      if (filters.cluster)       params.cluster       = filters.cluster
-      if (filters.branch)        params.branch        = filters.branch
-      if (filters.sector)        params.sector        = filters.sector
-      if (filters.membershipType)params.membershipType = filters.membershipType
-      if (filters.paymentStatus) params.paymentStatus  = filters.paymentStatus
-      if (selectedSectorType)    params.sectorType     = selectedSectorType
-      if (selectedSectorId)      params.sectorId       = selectedSectorId
-      if (selectedCategoryId)    params.categoryId     = selectedCategoryId
-
-      const res = await api.get('/payments/monthly-status', { params })
-      const allMembers = res.data.data as MemberPaymentStatus[]
-      const unpaidMembers = allMembers.filter(m => m.paymentStatus === 'Unpaid')
-
-      if (unpaidMembers.length === 0) { setLoading(false); return }
-
-      setBulkMembersToPay(unpaidMembers)
-      setShowBulkPaymentModal(true)
-      setLoading(false)
-    } catch (err: any) {
-      console.error(err)
-      setLoading(false)
-    }
   }
 
   const handleDeletePayment = async (paymentId: string | number) => {
@@ -902,7 +840,7 @@ export default function Payments() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleToggleAll}
-                  className="btn btn-secondary text-xs px-3 py-1.5"
+                  className="btn btn-secondary text-sm font-black px-4 py-2"
                 >
                   {members.filter(m => m.paymentStatus === 'Unpaid').every(m => checkedIds[m._id])
                     ? 'Uncheck All'
@@ -911,15 +849,9 @@ export default function Payments() {
                 <button
                   onClick={handleSaveSelected}
                   disabled={members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length === 0}
-                  className="btn btn-primary text-xs px-3 py-1.5"
+                  className="btn btn-primary text-sm font-black px-4 py-2"
                 >
-                  Save Selected ({members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length})
-                </button>
-                <button
-                  onClick={handlePayAllFiltered}
-                  className="btn btn-primary text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Pay All Unpaid
+                  Pay Selected ({members.filter(m => checkedIds[m._id] && m.paymentStatus === 'Unpaid').length})
                 </button>
               </div>
               <span className="text-xs text-slate-500">
@@ -988,15 +920,11 @@ export default function Payments() {
                               className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                             />
                             <button
-                              onClick={() => handleSavePayment(member)}
-                              disabled={savingId === member._id}
-                              className="btn btn-primary text-[10px] px-2 py-1"
+                              onClick={() => { setBulkMembersToPay([member]); setShowBulkPaymentModal(true) }}
+                              disabled={!checkedIds[member._id]}
+                              className={`btn text-xs font-black px-3 py-1.5 ${checkedIds[member._id] ? 'btn-primary' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                             >
-                              {savingId === member._id ? (
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                t('common.save') || 'Save'
-                              )}
+                              Pay
                             </button>
                           </div>
                         ) : (

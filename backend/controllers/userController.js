@@ -101,10 +101,32 @@ exports.adminUpdateUser = async (req, res) => {
     if (fullName) user.fullName = fullName;
     if (role) user.role = role;
     if (sectorUnitId !== undefined) user.sectorUnitId = sectorUnitId || null;
+    const oldActive = user.isActive;
     if (isActive !== undefined) user.isActive = isActive;
     if (password) user.password = password; // triggers beforeUpdate hook
 
     await user.save();
+
+    // Email: status change
+    if (isActive !== undefined && isActive !== oldActive) {
+      const statusText = isActive ? 'activated' : 'deactivated';
+      sendEmail({
+        to: user.email,
+        subject: `Account ${statusText} - Prosperity Party Dire Dawa`,
+        text: `Hello ${user.fullName},\n\nYour account has been ${statusText} by an admin.\n\nBest regards,\nAdmin Team`,
+        html: `<h3>Hello ${user.fullName},</h3><p>Your account has been <strong>${statusText}</strong> by an admin.</p><br><p>Best regards,<br>Admin Team</p>`
+      });
+    }
+
+    // Email: password changed by admin
+    if (password) {
+      sendEmail({
+        to: user.email,
+        subject: 'Password Reset - Prosperity Party Dire Dawa',
+        text: `Hello ${user.fullName},\n\nYour password has been reset by an admin. Your new password is: ${password}\n\nPlease login and change your password.\n\nBest regards,\nAdmin Team`,
+        html: `<h3>Hello ${user.fullName},</h3><p>Your password has been reset by an admin.</p><p>Your new password is: <strong>${password}</strong></p><p>Please login and change your password.</p><br><p>Best regards,<br>Admin Team</p>`
+      });
+    }
 
     const fresh = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
@@ -123,8 +145,22 @@ exports.deleteUser = async (req, res) => {
     if (Number(req.params.id) === req.userId) {
       return res.status(400).json({ success: false, message: 'You cannot delete your own account.' });
     }
-    const deleted = await User.destroy({ where: { id: req.params.id } });
-    if (!deleted) return res.status(404).json({ success: false, message: 'User not found.' });
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const userEmail = user.email;
+    const userName = user.fullName;
+
+    await user.destroy();
+
+    // Email: account deleted
+    sendEmail({
+      to: userEmail,
+      subject: 'Account Deleted - Prosperity Party Dire Dawa',
+      text: `Hello ${userName},\n\nYour account has been deleted by an admin. If you believe this was done in error, please contact the administration.\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${userName},</h3><p>Your account has been deleted by an admin.</p><p>If you believe this was done in error, please contact the administration.</p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
     res.json({ success: true, message: 'User deleted successfully.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -143,6 +179,15 @@ exports.adminResetPassword = async (req, res) => {
 
     user.password = newPassword;
     await user.save();
+
+    // Email: password reset by admin
+    sendEmail({
+      to: user.email,
+      subject: 'Password Reset - Prosperity Party Dire Dawa',
+      text: `Hello ${user.fullName},\n\nYour password has been reset by an admin. Your new password is: ${newPassword}\n\nPlease login and change your password.\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${user.fullName},</h3><p>Your password has been reset by an admin.</p><p>Your new password is: <strong>${newPassword}</strong></p><p>Please login and change your password.</p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
     res.json({ success: true, message: 'Password reset successfully.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -218,6 +263,15 @@ exports.changeMyPassword = async (req, res) => {
 
     user.password = newPassword;
     await user.save();
+
+    // Email: password changed by user
+    sendEmail({
+      to: user.email,
+      subject: 'Password Updated - Prosperity Party Dire Dawa',
+      text: `Hello ${user.fullName},\n\nYour password has been changed successfully.\n\nIf you did not make this change, please contact the administration immediately.\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${user.fullName},</h3><p>Your password has been changed successfully.</p><p>If you did not make this change, please contact the administration immediately.</p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
     res.json({ success: true, message: 'Password changed successfully.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

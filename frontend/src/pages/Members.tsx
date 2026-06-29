@@ -527,7 +527,12 @@ export default function Members() {
       className="space-y-6"
     >
       <div className="flex items-center justify-between">
-        <div></div>
+        <div>
+          {user?.role === 'sector_officer'
+            ? <p className="text-gray-600 dark:text-gray-400">{t('common.showing_members_assigned_sector')}</p>
+            : <p className="text-gray-600 dark:text-gray-400">{t('common.manage_all_registered_members')}</p>
+          }
+        </div>
         <div className="flex items-center gap-2">
           {user?.role === 'admin' && selectedIds.length > 0 && (
             <button 

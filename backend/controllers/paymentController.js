@@ -4,9 +4,11 @@ const { sequelize } = require('../config/db');
 const Payment  = require('../models/Payment');
 const Receipt  = require('../models/Receipt');
 const Member   = require('../models/Member');
+const User     = require('../models/User');
 const Contribution = require('../models/Contribution');
 const { getEthiopianYear, getEthiopianMonth } = require('../utils/ethiopianCalendar');
 const { createAuditLog } = require('../utils/auditLogger');
+const { sendEmail } = require('../utils/emailService');
 const paymentVerificationService = require('../services/paymentVerificationService');
 const fs = require('fs');
 const path = require('path');
@@ -80,6 +82,30 @@ exports.createPayment = async (req, res) => {
       issuedBy:      payment.receivedBy,
       branch:        member.branch
     });
+
+    // Email notification: sender (sector officer) and all admins
+    const periodLabel = `${payment.periodMonth}/${payment.periodYear}`;
+
+    sendEmail({
+      to: req.user.email,
+      subject: `Payment Confirmed - ${member.fullName}`,
+      text: `Hello ${req.user.fullName},\n\nPayment of ETB ${payment.amount} for ${member.fullName} (${periodLabel}) has been recorded successfully.\n\nReceipt: ${receiptId}\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${req.user.fullName},</h3><p>Payment of <strong>ETB ${payment.amount}</strong> for <strong>${member.fullName}</strong> (${periodLabel}) has been recorded successfully.</p><p>Receipt: <strong>${receiptId}</strong></p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
+    // Notify all admins
+    User.findAll({ where: { role: { [Op.in]: ['admin', 'super_admin'] } }, attributes: ['email', 'fullName'] })
+      .then(admins => {
+        admins.forEach(admin => {
+          sendEmail({
+            to: admin.email,
+            subject: `New Payment Received - ${member.fullName}`,
+            text: `Hello ${admin.fullName},\n\nA payment of ETB ${payment.amount} for ${member.fullName} (${periodLabel}) has been recorded by ${req.user.fullName}.\n\nReceipt: ${receiptId}\n\nBest regards,\nAdmin Team`,
+            html: `<h3>Hello ${admin.fullName},</h3><p>A payment of <strong>ETB ${payment.amount}</strong> for <strong>${member.fullName}</strong> (${periodLabel}) has been recorded by <strong>${req.user.fullName}</strong>.</p><p>Receipt: <strong>${receiptId}</strong></p><br><p>Best regards,<br>Admin Team</p>`
+          });
+        });
+      })
+      .catch(err => console.error('Failed to notify admins:', err));
 
     res.status(201).json({
       success: true,
@@ -430,6 +456,34 @@ exports.bulkPaymentUpload = async (req, res) => {
       } catch (err) {
         errors.push({ memberId: memberList[i].memberId, error: err.message });
       }
+    }
+
+    // Email notification: sender (sector officer) and all admins
+    if (createdPayments.length > 0) {
+      const count = createdPayments.length;
+      const totalSum = createdPayments.reduce((s, p) => s + Number(p.amount), 0);
+      const paymentMethod = method || 'Bank Transfer';
+      const statusLabel = autoVerified ? 'verified and recorded' : 'submitted for review';
+
+      sendEmail({
+        to: req.user?.email,
+        subject: `Bulk Payment ${statusLabel === 'verified and recorded' ? 'Confirmed' : 'Submitted'} - ${count} Members`,
+        text: `Hello ${req.user?.fullName || 'User'},\n\nA bulk payment of ETB ${totalSum.toLocaleString()} for ${count} members has been ${statusLabel}.\n\nMethod: ${paymentMethod}\nPeriod: ${periodMonth}/${periodYear}\n\nBest regards,\nAdmin Team`,
+        html: `<h3>Hello ${req.user?.fullName || 'User'},</h3><p>A bulk payment of <strong>ETB ${totalSum.toLocaleString()}</strong> for <strong>${count} members</strong> has been ${statusLabel}.</p><p>Method: ${paymentMethod}<br>Period: ${periodMonth}/${periodYear}</p><br><p>Best regards,<br>Admin Team</p>`
+      });
+
+      User.findAll({ where: { role: { [Op.in]: ['admin', 'super_admin'] } }, attributes: ['email', 'fullName'] })
+        .then(admins => {
+          admins.forEach(admin => {
+            sendEmail({
+              to: admin.email,
+              subject: `Bulk Payment Received - ${count} Members`,
+              text: `Hello ${admin.fullName},\n\nA bulk payment of ETB ${totalSum.toLocaleString()} for ${count} members has been ${statusLabel} by ${req.user?.fullName || 'a user'}.\n\nMethod: ${paymentMethod}\nPeriod: ${periodMonth}/${periodYear}\n\nBest regards,\nAdmin Team`,
+              html: `<h3>Hello ${admin.fullName},</h3><p>A bulk payment of <strong>ETB ${totalSum.toLocaleString()}</strong> for <strong>${count} members</strong> has been ${statusLabel} by <strong>${req.user?.fullName || 'a user'}</strong>.</p><p>Method: ${paymentMethod}<br>Period: ${periodMonth}/${periodYear}</p><br><p>Best regards,<br>Admin Team</p>`
+            });
+          });
+        })
+        .catch(err => console.error('Failed to notify admins:', err));
     }
 
     res.status(201).json({
