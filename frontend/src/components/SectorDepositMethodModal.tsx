@@ -184,17 +184,6 @@ function UploadForm({
 
   return (
     <div className="px-5 pb-5 pt-2 space-y-4 max-h-[70vh] overflow-y-auto">
-      {/* Bank badge (when coming from Manual Pay) */}
-      {selectedBank && paymentMethod === 'manual' && (
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 -mt-2">
-          <img src={selectedBank.logo} alt={selectedBank.name} className="w-6 h-6 object-contain" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300">{selectedBank.name} · Transfer to</p>
-            <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tracking-wide">{selectedBank.accountNo}</p>
-          </div>
-        </div>
-      )}
-
       {/* Messages */}
       {error && (
         <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
@@ -207,8 +196,8 @@ function UploadForm({
         </div>
       )}
 
-      {/* Direct Payment Details (At the Top) */}
-      {paymentMethod === 'direct' && (
+      {/* Payment Details (At the Top) */}
+      {(paymentMethod === 'direct' || paymentMethod === 'manual') && selectedBank && (
         <div className="flex flex-col gap-1.5 -mt-2 pt-0.5">
           {/* Header with Logo */}
           <div className="flex flex-col items-center justify-center">
@@ -415,19 +404,7 @@ function UploadForm({
         </div>
       )}
 
-      {/* Notes (Manual Pay only) */}
-      {paymentMethod !== 'direct' && (
-        <div>
-          <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">Notes (Optional)</label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Optional notes..."
-            className="input font-sans"
-          />
-        </div>
-      )}
+      
 
       {/* Upload progress */}
       {uploadProgress > 0 && uploadProgress < 100 && (

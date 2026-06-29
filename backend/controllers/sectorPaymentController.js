@@ -1,7 +1,9 @@
+const { Op } = require('sequelize');
 const SectorPayment = require('../models/SectorPayment');
 const SectorPaymentAuditLog = require('../models/SectorPaymentAuditLog');
 const User = require('../models/User');
 const { sequelize } = require('../config/db');
+const { sendEmail } = require('../utils/emailService');
 const {
   validateSectorFinance,
   isPeriodClosed,
@@ -161,6 +163,28 @@ exports.uploadSlip = async (req, res) => {
       data: payment,
       validation
     });
+
+    // Email notification: uploader and all admins
+    const periodLabel = `${billingMonth}/${billingYear}`;
+    sendEmail({
+      to: req.user?.email,
+      subject: `Sector Deposit Submitted - ${sectorUnitId}`,
+      text: `Hello ${req.user?.fullName || 'User'},\n\nYour sector deposit of ETB ${Number(totalAmount).toLocaleString()} for period ${periodLabel} has been submitted successfully. Status: ${status}\n\nBest regards,\nAdmin Team`,
+      html: `<h3>Hello ${req.user?.fullName || 'User'},</h3><p>Your sector deposit of <strong>ETB ${Number(totalAmount).toLocaleString()}</strong> for period <strong>${periodLabel}</strong> has been submitted successfully.</p><p>Status: <strong>${status}</strong></p><br><p>Best regards,<br>Admin Team</p>`
+    });
+
+    User.findAll({ where: { role: { [Op.in]: ['admin', 'super_admin'] } }, attributes: ['email', 'fullName'] })
+      .then(admins => {
+        admins.forEach(admin => {
+          sendEmail({
+            to: admin.email,
+            subject: `Sector Deposit Submitted for Review`,
+            text: `Hello ${admin.fullName},\n\nA sector deposit of ETB ${Number(totalAmount).toLocaleString()} for sector unit #${sectorUnitId} (period ${periodLabel}) has been submitted by ${req.user?.fullName || 'a user'}. Status: ${status}\n\nPlease review in the admin panel.\n\nBest regards,\nAdmin Team`,
+            html: `<h3>Hello ${admin.fullName},</h3><p>A sector deposit of <strong>ETB ${Number(totalAmount).toLocaleString()}</strong> for sector unit #${sectorUnitId} (period <strong>${periodLabel}</strong>) has been submitted by <strong>${req.user?.fullName || 'a user'}</strong>.</p><p>Status: <strong>${status}</strong></p><p>Please review in the admin panel.</p><br><p>Best regards,<br>Admin Team</p>`
+          });
+        });
+      })
+      .catch(err => console.error('Failed to notify admins:', err));
 
     // Try to replace generated PDF with real bank receipt (background, non-blocking)
     if (verificationResult && bankName && transactionId) {
@@ -396,6 +420,34 @@ exports.approvePayment = async (req, res) => {
       message: 'Payment approved successfully. Period has been closed.',
       data: payment
     });
+
+    // Email notification: uploader and all admins
+    const periodLabel = `${payment.billingMonth}/${payment.billingYear}`;
+    User.findByPk(payment.uploadedBy, { attributes: ['email', 'fullName'] })
+      .then(uploader => {
+        if (uploader) {
+          sendEmail({
+            to: uploader.email,
+            subject: 'Sector Deposit Approved',
+            text: `Hello ${uploader.fullName},\n\nYour sector deposit of ETB ${Number(payment.totalAmount).toLocaleString()} for period ${periodLabel} has been approved.\n\nBest regards,\nAdmin Team`,
+            html: `<h3>Hello ${uploader.fullName},</h3><p>Your sector deposit of <strong>ETB ${Number(payment.totalAmount).toLocaleString()}</strong> for period <strong>${periodLabel}</strong> has been <strong>approved</strong>.</p><br><p>Best regards,<br>Admin Team</p>`
+          });
+        }
+      })
+      .catch(err => console.error('Failed to notify uploader:', err));
+
+    User.findAll({ where: { role: { [Op.in]: ['admin', 'super_admin'] } }, attributes: ['email', 'fullName'] })
+      .then(admins => {
+        admins.forEach(admin => {
+          sendEmail({
+            to: admin.email,
+            subject: 'Sector Deposit Approved',
+            text: `Hello ${admin.fullName},\n\nA sector deposit of ETB ${Number(payment.totalAmount).toLocaleString()} for period ${periodLabel} has been approved by ${req.user?.fullName || 'an admin'}.\n\nBest regards,\nAdmin Team`,
+            html: `<h3>Hello ${admin.fullName},</h3><p>A sector deposit of <strong>ETB ${Number(payment.totalAmount).toLocaleString()}</strong> for period <strong>${periodLabel}</strong> has been approved by <strong>${req.user?.fullName || 'an admin'}</strong>.</p><br><p>Best regards,<br>Admin Team</p>`
+          });
+        });
+      })
+      .catch(err => console.error('Failed to notify admins:', err));
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

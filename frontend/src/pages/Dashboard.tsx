@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import PageLoader from '../components/PageLoader'
 import OrganizationTree from '../components/OrganizationTree'
-import { Users, DollarSign, TrendingUp, TrendingDown, AlertTriangle, Building2, Bot, Sparkles, Download, FileText, BarChart3, PieChartIcon } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, TrendingDown, AlertTriangle, Building2, Download, FileText, BarChart3, PieChartIcon, Trophy } from 'lucide-react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LabelList,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
 import { useToast } from '../components/Toast'
@@ -65,21 +65,6 @@ interface SectorAnalytics {
   collectionRate: number
 }
 
-interface AIInsights {
-  totalActiveMembers: number
-  paidToday: number
-  todayRevenue: number
-  paidThisMonth: number
-  unpaidThisMonth: number
-  monthlyRevenue: number
-  yearlyPayers: number
-  yearlyRevenue: number
-  completionRate: number
-  topSector: string | null
-  topSectorRevenue: number
-  insight: string
-}
-
 const COLORS = ['#C6930B', '#0F172A', '#1E293B', '#475569', '#EAB308', '#926C08', '#FDE047', '#D1D5DB']
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
@@ -90,7 +75,6 @@ export default function Dashboard() {
 
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [aiInsights, setAiInsights] = useState<AIInsights | null>(null)
   const toast = useToast()
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null)
   const [sectorAnalytics, setSectorAnalytics] = useState<SectorAnalytics[]>([])
@@ -113,12 +97,6 @@ export default function Dashboard() {
   }
 
   useEffect(() => { fetchAll() }, [refreshKey])
-
-  useEffect(() => {
-    api.get('/ai/dashboard')
-      .then(res => setAiInsights(res.data.data))
-      .catch(() => {})
-  }, [])
 
   // Poll every 10s for real-time updates
   useEffect(() => {
@@ -260,14 +238,8 @@ export default function Dashboard() {
     >
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
-            <span className="text-[var(--gold)]">{t('common.app_title')}</span>
-          </h1>
-          {user?.role === 'sector_officer' && (
-            <p className="text-[11px] text-slate-500 font-bold">
-              {t('dashboard.active_sectors')}: <span className="text-[var(--gold)] font-bold">{user?.assignedSectorUnit?.name || t('dashboard.active_sectors')}</span>
-            </p>
-          )}
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Welcome to Admin Dashboard</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Prosperity Party Dire Dawa Branch Office Membership Fee App</p>
         </div>
 
       </motion.div>
@@ -302,51 +274,45 @@ export default function Dashboard() {
 
 
 
-      {/* AI Insights Widget */}
-      {aiInsights && (
+      {/* Sector Unit Rankings */}
+      {sectorAnalytics.length > 0 && (
         <motion.div variants={itemVariants}>
-          <div className="card bg-gradient-to-r from-amber-50 to-amber-50/30 dark:from-amber-950/20 dark:to-slate-900 border-amber-200 dark:border-amber-900/30 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="flex items-start gap-4 relative">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg shrink-0">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">{t('ai.insights')}</h3>
-                  <span className="px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-[8px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" /> Live
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <p className="text-[18px] font-black text-slate-900 dark:text-white">{aiInsights.paidToday}</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('ai.paid_today')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[18px] font-black text-emerald-600">ETB {Number(aiInsights.todayRevenue).toLocaleString()}</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('ai.todays_revenue')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[18px] font-black text-rose-600">{aiInsights.unpaidThisMonth}</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('ai.unpaid_month')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[18px] font-black text-blue-600">{aiInsights.completionRate}%</p>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('dashboard.collection_rate')}</p>
-                  </div>
-                </div>
-                {aiInsights.insight && (
-                  <div className="mt-2 pt-2 border-t border-amber-200/50 dark:border-amber-900/20">
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 italic font-bold flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-                      {aiInsights.insight}
-                    </p>
-                  </div>
-                )}
-              </div>
+          <motion.div whileHover={{ scale: 1.01 }} className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <h3 className="text-lg font-bold">Sector Unit Rankings</h3>
             </div>
-          </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart
+                data={[...sectorAnalytics].sort((a, b) => b.collectionAmount - a.collectionAmount).map((s, i) => ({ ...s, rank: s.collectionAmount > 0 ? i + 1 : 0 }))}
+                margin={{ top: 24, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="sector" tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 900 }} angle={-45} textAnchor="end" height={120} interval={0} />
+                <YAxis tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 900 }} />
+                <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
+                <Bar dataKey="collectionAmount" fill="#0ea5e9" radius={[4, 4, 0, 0]} name="Collection (ETB)">
+                  <LabelList dataKey="rank" position="top" content={(props: any) => {
+                    const { x, y, width, value } = props
+                    if (!value || value === 0) return null
+                    return (
+                      <g>
+                        <svg x={x + width / 2 - 30} y={y - 20} width={18} height={18} viewBox="0 0 24 24" fill="#1F2937" stroke="#1F2937" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7" />
+                          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7" />
+                          <path d="M4 22h16" />
+                          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                        </svg>
+                        <text x={x + width / 2 + 16} y={y - 7} textAnchor="middle" fontSize={10} fontWeight={900} fill="#1F2937">{`Rank ${value}`}</text>
+                      </g>
+                    )
+                  }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
         </motion.div>
       )}
 
@@ -360,8 +326,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.membersByBranch}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} tickFormatter={(v) => t(v)} />
-                <YAxis />
+                <XAxis dataKey="_id" tick={{ fontSize: 10, fill: '#1F2937', fontWeight: 900 }} angle={-45} textAnchor="end" height={80} tickFormatter={(v) => t(v)} />
+                <YAxis tick={{ fill: '#1F2937', fontWeight: 900 }} />
                 <Tooltip formatter={(value, name, props) => [value, t(props.payload._id)]} />
                 <Bar dataKey="count" fill="#0ea5e9" name={t('common.members')} />
               </BarChart>
@@ -405,8 +371,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.membersByCategory?.length ? data.membersByCategory : data.membersByType}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="_id" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} tickFormatter={(v) => t(v)} />
-                <YAxis allowDecimals={false} />
+                <XAxis dataKey="_id" tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 900 }} angle={-20} textAnchor="end" height={60} tickFormatter={(v) => t(v)} />
+                <YAxis allowDecimals={false} tick={{ fill: '#1F2937', fontWeight: 900 }} />
                 <Tooltip formatter={(value, name, props) => [value, t(props.payload._id)]} />
                 <Bar dataKey="count" name={t('common.members')} radius={[4, 4, 0, 0]}>
                   {(data.membersByCategory?.length ? data.membersByCategory : data.membersByType).map((_: any, index: number) => (
@@ -437,8 +403,8 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={sectorAnalytics} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="sector" type="category" tick={{ fontSize: 10 }} width={120} />
+                  <XAxis type="number" tick={{ fill: '#1F2937', fontWeight: 900 }} />
+                  <YAxis dataKey="sector" type="category" tick={{ fontSize: 10, fill: '#1F2937', fontWeight: 900 }} width={120} />
                   <Tooltip formatter={(value: number) => `${value}%`} />
                   <Legend />
                   <Bar dataKey="collectionRate" name="Collection Rate %" fill="#22c55e" radius={[0, 4, 4, 0]} />
@@ -511,8 +477,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.revenueByType}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="_id" tick={{ fontSize: 11 }} />
-                <YAxis />
+                <XAxis dataKey="_id" tick={{ fontSize: 11, fill: '#1F2937', fontWeight: 900 }} />
+                <YAxis tick={{ fill: '#1F2937', fontWeight: 900 }} />
                 <Tooltip formatter={(value: number) => `ETB ${value.toLocaleString()}`} />
                 <Legend />
                 <Bar dataKey="totalRevenue" fill="#22c55e" name="Revenue" radius={[4, 4, 0, 0]} />
@@ -529,8 +495,8 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.membersBySector.slice(0, 15)}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} />
-              <YAxis />
+              <XAxis dataKey="_id" tick={{ fontSize: 10, fill: '#1F2937', fontWeight: 900 }} angle={-45} textAnchor="end" height={80} />
+              <YAxis tick={{ fill: '#1F2937', fontWeight: 900 }} />
               <Tooltip />
               <Bar dataKey="count" fill="#8b5cf6" name={t('common.members')} radius={[4, 4, 0, 0]} />
             </BarChart>
