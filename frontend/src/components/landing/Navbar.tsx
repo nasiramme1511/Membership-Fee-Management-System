@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, ChevronDown, ExternalLink, Users } from 'lucide-react';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 interface NavbarProps {
@@ -15,6 +15,18 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('#hero');
+  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setLoginDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -77,15 +89,49 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
 
-              <motion.button
-                onClick={() => navigate('/login')}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                className="hidden sm:inline-flex items-center gap-2.5 px-6 py-3 bg-[#0B5D3B] hover:bg-[#094d31] text-white font-black rounded-xl text-[12px] uppercase tracking-[0.15em] transition-all duration-300 shadow-lg shadow-[#0B5D3B]/20 hover:shadow-[#0B5D3B]/40"
-              >
-                <LogIn className="w-4 h-4" />
-                Login
-              </motion.button>
+              <div className="relative hidden sm:block" ref={dropdownRef}>
+                <motion.button
+                  onClick={() => setLoginDropdownOpen(!loginDropdownOpen)}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#0B5D3B] hover:bg-[#094d31] text-white font-black rounded-xl text-[12px] uppercase tracking-[0.15em] transition-all duration-300 shadow-lg shadow-[#0B5D3B]/20 hover:shadow-[#0B5D3B]/40"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${loginDropdownOpen ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {loginDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
+                  >
+                    <button
+                      onClick={() => { navigate('/login'); setLoginDropdownOpen(false); }}
+                      className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-sm font-bold text-slate-700 hover:bg-[#0B5D3B]/5 hover:text-[#0B5D3B] transition-colors border-b border-slate-100"
+                    >
+                      <Users className="w-4 h-4 text-[#0B5D3B]" />
+                      <span>
+                        <span className="block">Membership Management</span>
+                        <span className="block text-[10px] font-normal text-slate-400 mt-0.5">Manage member fees &amp; records</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => { window.open('#', '_blank'); setLoginDropdownOpen(false); }}
+                      className="w-full flex items-center gap-3 px-5 py-3.5 text-left text-sm font-bold text-slate-700 hover:bg-[#0B5D3B]/5 hover:text-[#0B5D3B] transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4 text-[#0B5D3B]" />
+                      <span>
+                        <span className="block">Resource Management</span>
+                        <span className="block text-[10px] font-normal text-slate-400 mt-0.5">Manage resources &amp; inventory</span>
+                      </span>
+                    </button>
+                  </motion.div>
+                )}
+              </div>
 
               {/* Mobile menu */}
               <button
@@ -143,13 +189,20 @@ export default function Navbar({ scrolled, navLinks }: NavbarProps) {
               ))}
             </div>
 
-            <div className="px-6 pb-8">
+            <div className="px-6 pb-8 flex flex-col gap-2">
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
                 className="w-full py-4 bg-[#0B5D3B] text-white font-black uppercase tracking-[0.2em] rounded-xl text-sm flex items-center justify-center gap-3 hover:bg-[#094d31] transition-colors shadow-lg"
               >
-                <LogIn className="w-4 h-4" />
-                Login
+                <Users className="w-4 h-4" />
+                Membership Management
+              </button>
+              <button
+                onClick={() => { window.open('#', '_blank'); setMobileMenuOpen(false); }}
+                className="w-full py-4 border-2 border-[#0B5D3B] text-[#0B5D3B] font-black uppercase tracking-[0.2em] rounded-xl text-sm flex items-center justify-center gap-3 hover:bg-[#0B5D3B]/5 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Resource Management
               </button>
             </div>
           </motion.div>
